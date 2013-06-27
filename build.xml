@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project basedir="" default="build">
+
+    <property name="src.dir" value="src"/>
+    <property name="build.dir" value="bin"/>
+    <property name="release.dir" value="release"/>
+    <property name="main.class" value="asarnow.jce.Main"/>
+
+    <path id="build.classpath">
+        <fileset dir="lib">
+            <include name="*.jar"/>
+        </fileset>
+        <pathelement path="${build.dir}"/>
+    </path>
+
+    <pathconvert property="mf.classpath" pathsep=" ">
+        <path refid="build.classpath"/>
+        <mapper>
+            <chainedmapper>
+                <flattenmapper/>
+                <globmapper from="*.jar" to="lib/*.jar"/>
+            </chainedmapper>
+        </mapper>
+    </pathconvert>
+
+    <target name="build">
+        <mkdir dir="${build.dir}"/>
+        <javac destdir="${build.dir}" source="1.6" target="1.6" debug="true" deprecation="false" optimize="true" failonerror="true">
+            <src path="${src.dir}"/>
+            <classpath refid="build.classpath"/>
+        </javac>
+    </target>
+
+    <target name="clean" description="Clean output directories">
+        <delete>
+            <fileset dir="${build.dir}">
+                <include name="**/*.class"/>
+            </fileset>
+        </delete>
+    </target>
+
+    <target name="clean,build" description="Clean and build">
+        <antcall target="clean" />
+        <antcall target="build" />
+    </target>
+
+    <target name="create-jar" description="Create unified JAR">
+        <jar basedir="${build.dir}" destfile="${release.dir}/jce.jar" filesetmanifest="skip">
+            <archives>
+                <zips>
+                    <zipfileset dir="lib" includes="*.jar" excludes=""/>
+                </zips>
+            </archives>
+
+            <manifest>
+                <attribute name="Main-Class" value="${main.class}"/>
+                <!--<attribute name="Class-Path" value="${mf.classpath}"/>-->
+            </manifest>
+        </jar>
+    </target>
+
+    <target name="update-jar" description="Update the JAR">
+        <jar basedir="${build.dir}" destfile="${release.dir}/jce.jar" filesetmanifest="skip" update="true">
+            <archives>
+                <zips>
+                    <zipfileset dir="lib" includes="*.jar" excludes=""/>
+                </zips>
+            </archives>
+
+            <manifest>
+                <attribute name="Main-Class" value="${main.class}"/>
+                <!--<attribute name="Class-Path" value="${mf.classpath}"/>-->
+            </manifest>
+        </jar>
+    </target>
+
+    <target name="build,create-jar" description="Build and build JAR">
+        <antcall target="build"/>
+        <antcall target="create-jar"/>
+    </target>
+
+    <target name="build,update-jar" description="Build and update the JAR">
+        <antcall target="build"/>
+        <antcall target="update-jar"/>
+    </target>
+
+    <target name="clean,build,create-jar" description="Clean and build and build JAR">
+        <antcall target="clean"/>
+        <antcall target="build"/>
+        <antcall target="create-jar"/>
+    </target>
+
+</project>
