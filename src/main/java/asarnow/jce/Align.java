@@ -1,5 +1,10 @@
 package asarnow.jce;
 
+import asarnow.jce.job.DaliImportDCCPJob;
+import asarnow.jce.job.DaliListAlignmentJobSeries;
+import asarnow.jce.job.FileOutputJob;
+import asarnow.jce.job.JobSeries;
+import asarnow.jce.job.PairwiseAlignmentJobSeries;
 import org.biojava.bio.structure.Atom;
 import org.biojava.bio.structure.Structure;
 import org.biojava.bio.structure.StructureException;
@@ -17,7 +22,6 @@ import org.biojava.bio.structure.align.util.AtomCache;
 import org.biojava.bio.structure.io.FileParsingParameters;
 import org.biojava.bio.structure.io.PDBFileReader;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -102,19 +106,7 @@ public class Align {
         return 0;
     }
 
-    static int alignList(List<String> idsRaw, String pdbDir, String outFile, Boolean divided, Integer nproc, int alignerFlag) /*throws IOException, InterruptedException*/ {
-        List<String> ids = new ArrayList<>();
-        int l = 0;
-        for (String id : idsRaw){
-            if ( Utility.pdbFileExists(id, pdbDir, divided) ) {
-                ids.add(id);
-                l++;
-            }
-        }
-
-        System.out.println(String.valueOf(idsRaw.size() - l) + " ids removed due to missing file");
-
-        AtomCache cache = Utility.initAtomCache(pdbDir, divided);
+    static int alignList(List<String> ids, String pdbDir, String outFile, Boolean divided, Integer nproc, int alignerFlag) /*throws IOException, InterruptedException*/ {
 
         BlockingQueue<String> outputQueue = new ArrayBlockingQueue<>(128);
 
@@ -126,20 +118,28 @@ public class Align {
                 new ArrayBlockingQueue<Runnable>(4096),
                 new ThreadPoolExecutor.CallerRunsPolicy() ); // If we have to reject a task, run it in the calling thread.
 
-        Output outputRunnable = new Output(outputQueue, outFile);
-        Thread outputThread = new Thread( outputRunnable );
-        outputThread.start();
-
-        int k = 0;
-        for (int i=0; i<ids.size(); i++){
-            for (int j=i+1; j<ids.size(); j++){
-                threadPool.execute(new AlignmentJob(cache, ids.get(i), ids.get(j), alignerFlag, outputQueue));
-//                System.out.println(++k);
-                k++;
-            }
+        JobSeries jobSeries;
+        Thread outputThread;
+        switch (alignerFlag) {
+            case Constants.DALI:
+                DaliImportDCCPJob daliImportDCCPJob = new DaliImportDCCPJob(outputQueue, outFile);
+                outputThread = new Thread(daliImportDCCPJob);
+                jobSeries = new DaliListAlignmentJobSeries(ids, outputQueue);
+                break;
+            default:
+                AtomCache cache = Utility.initAtomCache(pdbDir, divided);
+                FileOutputJob fileOutputJobRunnable = new FileOutputJob(outputQueue, outFile);
+                outputThread = new Thread(fileOutputJobRunnable);
+                jobSeries = new PairwiseAlignmentJobSeries(ids, alignerFlag, cache, outputQueue);
+                break;
         }
 
-        System.out.println(String.valueOf(k) + " pairs to align");
+        outputThread.start();
+
+        while (jobSeries.hasNext()) {
+            Runnable job = jobSeries.next();
+            if (job!=null) threadPool.execute(job);
+        }
 
         threadPool.shutdown();
         try {
@@ -153,20 +153,20 @@ public class Align {
         return 0;
     }
 
-    protected static AFPChain useFatcat(Atom[] ca1, Atom[] ca2) throws StructureException {
+    public static AFPChain useFatcat(Atom[] ca1, Atom[] ca2) throws StructureException {
         StructureAlignment aligner = StructureAlignmentFactory.getAlgorithm(FatCatFlexible.algorithmName);
         FatCatParameters params = new FatCatParameters();
 //	    params.setShowAFPRanges(true);
         return aligner.align(ca1, ca2, params);
     }
 
-    protected static AFPChain useCe(Atom[] ca1, Atom[] ca2) throws StructureException {
+    public static AFPChain useCe(Atom[] ca1, Atom[] ca2) throws StructureException {
         StructureAlignment aligner = StructureAlignmentFactory.getAlgorithm(CeMain.algorithmName);
         CeParameters params = new CeParameters();
         return aligner.align(ca1, ca2, params);
     }
 
-    protected static AFPChain useFatcatRigid(Atom[] ca1, Atom[] ca2) throws StructureException {
+    public static AFPChain useFatcatRigid(Atom[] ca1, Atom[] ca2) throws StructureException {
         StructureAlignment aligner = StructureAlignmentFactory.getAlgorithm(FatCatRigid.algorithmName);
         FatCatParameters params = new FatCatParameters();
 //	    params.setShowAFPRanges(true);

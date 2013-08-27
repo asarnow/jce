@@ -1,5 +1,7 @@
-package asarnow.jce;
+package asarnow.jce.job;
 
+import asarnow.jce.Align;
+import asarnow.jce.Constants;
 import org.biojava.bio.structure.*;
 import org.biojava.bio.structure.align.model.AFPChain;
 import org.biojava.bio.structure.align.util.AtomCache;
@@ -13,14 +15,14 @@ import java.util.concurrent.BlockingQueue;
  * Date: 7/8/11
  * Time: 10:42 PM
  */
-public class AlignmentJob implements Runnable {
+public class PairwiseAlignmentJob implements Runnable {
 
     private AtomCache cache;
     private String id1,id2;
     private int alignerFlag;
     private BlockingQueue<String> outputQueue;
 
-    public AlignmentJob(AtomCache cache, String id1, String id2, int alignerFlag, BlockingQueue<String> outputQueue) {
+    public PairwiseAlignmentJob(AtomCache cache, String id1, String id2, int alignerFlag, BlockingQueue<String> outputQueue) {
         this.cache = cache;
         this.id1 = id1.substring(0,4).toLowerCase() + id1.substring(4).toUpperCase();
         this.id2 = id2.substring(0,4).toLowerCase() + id2.substring(4).toUpperCase();
@@ -31,12 +33,12 @@ public class AlignmentJob implements Runnable {
     public void run() {
 
         try {
-//            System.out.println("AlignmentJob:34");
-			Structure structure1 = cache.getStructure( id1.substring(0,4) );
-			Structure structure2 = cache.getStructure( id2.substring(0,4) );
-//            System.out.println("AlignmentJob:37");
-            structure1 = new StructureImpl(structure1.getChainByPDB( id1.substring(4) ));
-            structure2 = new StructureImpl(structure2.getChainByPDB( id2.substring(4)) );
+//            System.out.println("PairwiseAlignmentJob:34");
+			Structure structure2 = cache.getStructure( id2 );
+			Structure structure1 = cache.getStructure( id1 );
+//            System.out.println("PairwiseAlignmentJob:37");
+//            structure1 = new StructureImpl(structure1.getChainByPDB( id1.substring(4) ));
+//            structure2 = new StructureImpl(structure2.getChainByPDB( id2.substring(4)) );
 
             Atom[] ca1 = StructureTools.getAtomCAArray(structure1);
             Atom[] ca2 = StructureTools.getAtomCAArray(structure2);
@@ -67,7 +69,7 @@ public class AlignmentJob implements Runnable {
 
             }
 
-//            System.out.println("AlignmentJob:52");
+//            System.out.println("PairwiseAlignmentJob:52");
 
             outputQueue.put(id1 + '\t' +
                     id2 + '\t' +

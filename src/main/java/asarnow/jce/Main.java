@@ -24,6 +24,7 @@ public class Main {
         OptionSpec fatcatArg = parser.acceptsAll(Arrays.asList("FATCAT","fatcat","fc"), "Align with FATCAT - flexible");
         OptionSpec fatcatRigidArg = parser.acceptsAll(Arrays.asList("FATCAT-rigid","fatcat-rigid","fcr"), "Align with FATCAT - rigid");
         OptionSpec ceArg = parser.acceptsAll(Arrays.asList("CE","ce"), "Align with CE (default)");
+        OptionSpec daliArg = parser.acceptsAll(Arrays.asList("Dali","dali"),"Align using DaliLite external binary");
         // Aligner specific options
         // CE
 
@@ -31,33 +32,33 @@ public class Main {
 
 
         // Structure selection
-        OptionSpec < String > listArg = parser.acceptsAll(Arrays.asList("list", "l"), "Specify file of IDs for pairwise alignments").
-                                                withRequiredArg().
-                                                ofType(String.class);
-        // PDB installation
+        OptionSpec<String> listArg = parser.acceptsAll(Arrays.asList("list", "l"), "Specify file of IDs for pairwise alignments").
+                                            requiredIf(daliArg).
+                                            withRequiredArg().
+                                            ofType(String.class);
+        // PDB files
         OptionSpec<String> dirArg = parser.acceptsAll(Arrays.asList("pdb","p"), "Specify PDB directory").
-                                            requiredIf(listArg).
                                             withRequiredArg().
                                             ofType(String.class).
                                             defaultsTo(Constants.CWD);
-        OptionSpec unifiedPDB = parser.acceptsAll(Arrays.asList("unified","u"), "Use unified PDB directory (symlinks in PDB)");
+        OptionSpec unifiedPDB = parser.acceptsAll(Arrays.asList("unified","u"), "Use unified PDB directory");
+        OptionSpec parseAllAtomsArg = parser.acceptsAll(Arrays.asList("parseall"),"Parse all atoms (default: parse CA only)");
 
         OptionSpec<String> extractArg = parser.acceptsAll(Arrays.asList("extract","e"), "Directory for extracted structures").
-                                                withOptionalArg().
-                                                ofType(String.class).
-                                                defaultsTo("");
+                                            withOptionalArg().
+                                            ofType(String.class);
         OptionSpec compressArg = parser.acceptsAll(Arrays.asList("compress","c"), "Compress extracted structures");
 
         // Alignment control
-        OptionSpec<Integer> nprocArg = parser.acceptsAll(Arrays.asList("nproc","n"), "Number of threads (default: 1)").
-                                                withRequiredArg().
-                                                ofType(Integer.class).
-                                                defaultsTo(Constants.NPROC_DEFAULT);
-        // Output
+        OptionSpec<Integer> nprocArg = parser.acceptsAll(Arrays.asList("nproc","n"), "Number of threads").
+                                            withRequiredArg().
+                                            ofType(Integer.class).
+                                            defaultsTo(Constants.NPROC_DEFAULT);
+        // FileOutputJob
         OptionSpec infoArg = parser.acceptsAll(Arrays.asList("info","i"),"Print information about structures listed on command line");
-        OptionSpec<String> outfileArg = parser.acceptsAll(Arrays.asList("outfile","o"), "Output file for pairwise alignments").
-                                                withRequiredArg().
-                                                ofType(String.class);
+        OptionSpec<String> outfileArg = parser.acceptsAll(Arrays.asList("outfile","o"), "output file").
+                                            withRequiredArg().
+                                            ofType(String.class);
         // Non-option arguments
         OptionSpec<String> nonOpts = parser.nonOptions("<Structure 1> [<Structure 2>] ... [<Structure N>]").ofType(String.class);
         // Help, parsing
@@ -71,20 +72,27 @@ public class Main {
 
         int alignerFlag = Constants.NOALIGN;
         if ( opts.has(ceArg) ) {
-            alignerFlag = Constants.CE; // use CE
+            alignerFlag = Constants.CE;
         } else if ( opts.has(fatcatArg) ) {
-            alignerFlag = Constants.FATCAT; // use fatcat
+            alignerFlag = Constants.FATCAT;
         } else if ( opts.has(fatcatRigidArg) ) {
-            alignerFlag = Constants.FATCAT_RIGID; // use fatcat_rigid
+            alignerFlag = Constants.FATCAT_RIGID;
+        } else if ( opts.has(daliArg) ) {
+            alignerFlag = Constants.DALI;
         }
 
         String extractDir = null;
         if ( opts.has(listArg)) { // Using list
             List<String> list2align;
             if ( opts.has(extractArg) ) {
-                extractDir = Data.createExtractDir(opts.valueOf(extractArg));
+                extractDir = Data.createExtractDir( opts.hasArgument(extractArg) ? opts.valueOf(extractArg) : null );
                 List<String> list = Utility.listFromFile(opts.valueOf(listArg));
-                list2align = Data.extractStructures(list,opts.valueOf(dirArg),opts.has(unifiedPDB),extractDir,opts.has(compressArg));
+                list2align = Data.extractStructures(list,
+                        opts.valueOf(dirArg),
+                        opts.has(unifiedPDB),
+                        Utility.createFileParsingParameters(opts.has(parseAllAtomsArg)),
+                        extractDir,
+                        opts.has(compressArg));
             } else {
                 list2align = Utility.listFromFile(opts.valueOf(listArg));
             }
@@ -105,8 +113,13 @@ public class Main {
             List<String> noas = opts.valuesOf(nonOpts);
             if (noas.size()==0) System.exit(1);
             if (opts.has(extractArg)) {
-                extractDir = Data.createExtractDir(opts.valueOf(extractArg));
-                noas = Data.extractStructures(noas,opts.valueOf(dirArg),opts.has(unifiedPDB),extractDir,opts.has(compressArg));
+                extractDir = Data.createExtractDir(opts.hasArgument(extractArg) ? opts.valueOf(extractArg) : null);
+                noas = Data.extractStructures(noas,
+                        opts.valueOf(dirArg),
+                        opts.has(unifiedPDB),
+                        Utility.createFileParsingParameters(opts.has(parseAllAtomsArg)),
+                        extractDir,
+                        opts.has(compressArg));
             }
             if (opts.has(infoArg)) for (String noa : noas) System.out.println(Data.getStructureInfo(noa));
             if (noas.size()==2) {

@@ -1,4 +1,4 @@
-package asarnow.jce;
+package asarnow.jce.job;
 
 import java.io.*;
 import java.util.concurrent.BlockingQueue;
@@ -9,23 +9,26 @@ import java.util.concurrent.BlockingQueue;
  * Date: 7/9/11
  * Time: 12:27 PM
  */
-public class Output implements Runnable{
+public class FileOutputJob implements Runnable{
 
     BlockingQueue<String> queue;
-    String filePath;
+    File file;
 
-    public Output(BlockingQueue<String> queue, String filePath) {
+    public FileOutputJob(BlockingQueue<String> queue, File file) {
         this.queue = queue;
-        this.filePath = filePath;
-        //TODO implment standard output
+        this.file = file;
+    }
+
+    public FileOutputJob(BlockingQueue<String> queue, String filePath) {
+        this(queue,new File(filePath));
     }
 
     public void run(){
-        try {
+        try (Writer output = new BufferedWriter(new FileWriter(this.file))){
             int k = 0;
-            Writer output = new BufferedWriter(new FileWriter(this.filePath));
+
             while (true) {
-//                System.out.println("Output:30");
+//                System.out.println("FileOutputJob:30");
                 String line = queue.take();
                 if (line.equals("STOP")){
                     break;
@@ -35,7 +38,6 @@ public class Output implements Runnable{
                     k++;
                 }
             }
-            output.close();
             System.out.println(String.valueOf(k) + " lines written");
         } catch (InterruptedException | IOException e) {
             //TODO Auto-generated catch block
