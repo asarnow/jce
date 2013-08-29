@@ -54,13 +54,14 @@ public class Main {
                                             withRequiredArg().
                                             ofType(Integer.class).
                                             defaultsTo(Constants.NPROC_DEFAULT);
-        // FileOutputJob
+        // Output
         OptionSpec infoArg = parser.acceptsAll(Arrays.asList("info","i"),"Print information about structures listed on command line");
         OptionSpec<String> outfileArg = parser.acceptsAll(Arrays.asList("outfile","o"), "output file").
                                             withRequiredArg().
                                             ofType(String.class);
+        OptionSpec distArg = parser.acceptsAll(Arrays.asList("distances","d"),"Generate distance matrix from list and alignment files");
         // Non-option arguments
-        OptionSpec<String> nonOpts = parser.nonOptions("<Structure 1> [<Structure 2>] ... [<Structure N>]").ofType(String.class);
+        OptionSpec<String> nonOpts = parser.nonOptions("[<File>] [<Structure 1>] ... [<Structure N>]").ofType(String.class);
         // Help, parsing
         OptionSpec helpArg = parser.acceptsAll(Arrays.asList("h", "help", "?"), "Show this help");
         OptionSet opts = parser.parse(args);
