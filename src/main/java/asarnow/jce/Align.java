@@ -115,7 +115,7 @@ public class Align {
                 nproc, // max size
                 60, // idle timeout
                 TimeUnit.SECONDS,
-                new ArrayBlockingQueue<Runnable>(4096),
+                new ArrayBlockingQueue<Runnable>(4096, true), // Fairness = true for FIFO
                 new ThreadPoolExecutor.CallerRunsPolicy() ); // If we have to reject a task, run it in the calling thread.
 
         JobSeries jobSeries;
@@ -135,11 +135,14 @@ public class Align {
         }
 
         outputThread.start();
+        // threadPool.execute( outputJob );
 
         while (jobSeries.hasNext()) {
             Runnable job = jobSeries.next();
             if (job!=null) threadPool.execute(job);
         }
+
+        // threadPool.execute( new PoisonPill() );
 
         threadPool.shutdown();
         try {
