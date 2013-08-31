@@ -39,7 +39,6 @@ public class StandardOutputJob implements Runnable{
             }
             System.out.println(String.valueOf(k) + " lines written");
         } catch (InterruptedException e) {
-            //TODO Auto-generated catch block
             e.printStackTrace();
         }
     }

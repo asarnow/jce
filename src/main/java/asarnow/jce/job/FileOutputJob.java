@@ -40,7 +40,6 @@ public class FileOutputJob implements Runnable{
             }
             System.out.println(String.valueOf(k) + " lines written");
         } catch (InterruptedException | IOException e) {
-            //TODO Auto-generated catch block
             e.printStackTrace();
         }
     }

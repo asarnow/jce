@@ -49,7 +49,6 @@ public class DaliImportDCCPJob extends FileOutputJob {
                 }
             }
         } catch (IOException | InterruptedException e) {
-            //TODO auto-generated catch block
             e.printStackTrace();
         }
 

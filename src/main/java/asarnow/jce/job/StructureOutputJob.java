@@ -33,7 +33,6 @@ public class StructureOutputJob implements Runnable {
             Structure structure = cache.getStructure(id);
             Utility.writePDB(structure, extractDir, compressed);
         } catch (IOException | StructureException e) {
-            //TODO auto-generated catch block
             e.printStackTrace();
         }
     }

@@ -42,7 +42,6 @@ public class DaliListAlignmentJobSeries implements JobSeries {
         try {
             return new DaliListAlignmentJob(queue,id,others);
         } catch (IOException e) {
-            //TODO auto-generated catch block
             e.printStackTrace();
             return null;
         }

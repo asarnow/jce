@@ -50,7 +50,6 @@ public class DaliListAlignmentJob implements Runnable {
             shell.waitFor();
             output.put(new File(workingDir,id+".dccp").getAbsolutePath());
         } catch (IOException | InterruptedException e) {
-            //TODO auto-generated catch block
             e.printStackTrace();
         }
     }
