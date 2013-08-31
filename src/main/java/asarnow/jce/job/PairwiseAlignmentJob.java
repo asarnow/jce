@@ -24,8 +24,8 @@ public class PairwiseAlignmentJob implements Runnable {
 
     public PairwiseAlignmentJob(AtomCache cache, String id1, String id2, int alignerFlag, BlockingQueue<String> outputQueue) {
         this.cache = cache;
-        this.id1 = id1.substring(0,4).toLowerCase() + id1.substring(4).toUpperCase();
-        this.id2 = id2.substring(0,4).toLowerCase() + id2.substring(4).toUpperCase();
+        this.id1 = id1;
+        this.id2 = id2;
         this.alignerFlag = alignerFlag;
         this.outputQueue = outputQueue;
     }
