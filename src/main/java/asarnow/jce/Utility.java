@@ -70,18 +70,28 @@ public class Utility {
         return initAtomCache(pdbPath, divided, createFileParsingParameters());
     }
 
-    public static FileParsingParameters createFileParsingParameters(boolean parseAllAtoms) {
+    public static FileParsingParameters createFileParsingParameters(boolean caOnly, boolean alignSeqRes, boolean secStruc, boolean chemCompInfo) {
         FileParsingParameters parameters = new FileParsingParameters();
-        parameters.setAlignSeqRes(false);
-        parameters.setParseSecStruc(false);
-        parameters.setLoadChemCompInfo(false);
-        parameters.setParseCAOnly(!parseAllAtoms);
+        parameters.setAlignSeqRes(alignSeqRes);
+        parameters.setParseSecStruc(secStruc);
+        parameters.setLoadChemCompInfo(chemCompInfo);
+        parameters.setParseCAOnly(caOnly);
         return parameters;
     }
-
-
     public static FileParsingParameters createFileParsingParameters() {
-        return createFileParsingParameters(true);
+        return createFileParsingParameters(true, false, false, false);
+    }
+
+    public static FileParsingParameters createFileParsingParameters(boolean caOnly) {
+        return createFileParsingParameters(caOnly, false, false, false);
+    }
+
+    public static FileParsingParameters createFileParsingParameters(boolean caOnly, boolean alignSeqRes) {
+        return createFileParsingParameters(caOnly, alignSeqRes, false, false);
+    }
+
+    public static FileParsingParameters createFileParsingParameters(boolean caOnly, boolean alignSeqRes, boolean secStruc) {
+        return createFileParsingParameters(caOnly, alignSeqRes, secStruc, false);
     }
 
     public static boolean pdbFileExists(String id, String pdbDir, boolean divided){
