@@ -150,7 +150,7 @@ public class Align {
             outputQueue.put("STOP");
             outputThread.join();
         } catch (InterruptedException e) {
-            e.printStackTrace(); //TODO Auto-generated catch block
+            e.printStackTrace();
         }
 
         return 0;
