@@ -1,6 +1,6 @@
 package asarnow.jce.job;
 
-import org.biojava.bio.structure.align.util.AtomCache;
+import org.biojava.nbio.structure.align.util.AtomCache;
 
 import java.util.List;
 import java.util.concurrent.BlockingQueue;

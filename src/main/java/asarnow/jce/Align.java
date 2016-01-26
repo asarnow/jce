@@ -5,22 +5,22 @@ import asarnow.jce.job.DaliListAlignmentJobSeries;
 import asarnow.jce.job.FileOutputJob;
 import asarnow.jce.job.JobSeries;
 import asarnow.jce.job.PairwiseAlignmentJobSeries;
-import org.biojava.bio.structure.Atom;
-import org.biojava.bio.structure.Structure;
-import org.biojava.bio.structure.StructureException;
-import org.biojava.bio.structure.StructureImpl;
-import org.biojava.bio.structure.StructureTools;
-import org.biojava.bio.structure.align.StructureAlignment;
-import org.biojava.bio.structure.align.StructureAlignmentFactory;
-import org.biojava.bio.structure.align.ce.CeMain;
-import org.biojava.bio.structure.align.ce.CeParameters;
-import org.biojava.bio.structure.align.fatcat.FatCatFlexible;
-import org.biojava.bio.structure.align.fatcat.FatCatRigid;
-import org.biojava.bio.structure.align.fatcat.calc.FatCatParameters;
-import org.biojava.bio.structure.align.model.AFPChain;
-import org.biojava.bio.structure.align.util.AtomCache;
-import org.biojava.bio.structure.io.FileParsingParameters;
-import org.biojava.bio.structure.io.PDBFileReader;
+import org.biojava.nbio.structure.Atom;
+import org.biojava.nbio.structure.Structure;
+import org.biojava.nbio.structure.StructureException;
+import org.biojava.nbio.structure.StructureImpl;
+import org.biojava.nbio.structure.StructureTools;
+import org.biojava.nbio.structure.align.StructureAlignment;
+import org.biojava.nbio.structure.align.StructureAlignmentFactory;
+import org.biojava.nbio.structure.align.ce.CeMain;
+import org.biojava.nbio.structure.align.ce.CeParameters;
+import org.biojava.nbio.structure.align.fatcat.FatCatFlexible;
+import org.biojava.nbio.structure.align.fatcat.FatCatRigid;
+import org.biojava.nbio.structure.align.fatcat.calc.FatCatParameters;
+import org.biojava.nbio.structure.align.model.AFPChain;
+import org.biojava.nbio.structure.align.util.AtomCache;
+import org.biojava.nbio.structure.io.FileParsingParameters;
+import org.biojava.nbio.structure.io.PDBFileReader;
 
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -47,7 +47,7 @@ public class Align {
 
         PDBFileReader reader = new PDBFileReader();
         if (pdbDir != null) reader.setPath(pdbDir);
-        reader.setPdbDirectorySplit(divided);
+//        reader.setPdbDirectorySplit(divided);
         reader.setFileParsingParameters(fparams);
 
         Structure structure1;

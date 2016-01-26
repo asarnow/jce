@@ -2,9 +2,9 @@ package asarnow.jce.job;
 
 import asarnow.jce.Align;
 import asarnow.jce.Constants;
-import org.biojava.bio.structure.*;
-import org.biojava.bio.structure.align.model.AFPChain;
-import org.biojava.bio.structure.align.util.AtomCache;
+import org.biojava.nbio.structure.*;
+import org.biojava.nbio.structure.align.model.AFPChain;
+import org.biojava.nbio.structure.align.util.AtomCache;
 
 import java.io.IOException;
 import java.util.concurrent.BlockingQueue;

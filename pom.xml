@@ -59,26 +59,26 @@
       </dependency>
       <dependency>
         <groupId>org.biojava</groupId>
-        <artifactId>biojava3-core</artifactId>
-        <version>3.0.6</version>
+        <artifactId>biojava-core</artifactId>
+        <version>4.1.0</version>
         <scope>compile</scope>
       </dependency>
       <dependency>
         <groupId>org.biojava</groupId>
-        <artifactId>biojava3-alignment</artifactId>
-        <version>3.0.6</version>
+        <artifactId>biojava-alignment</artifactId>
+        <version>4.1.0</version>
         <scope>compile</scope>
       </dependency>
       <dependency>
         <groupId>org.biojava</groupId>
-        <artifactId>biojava3-phylo</artifactId>
-        <version>3.0.6</version>
+        <artifactId>biojava-phylo</artifactId>
+        <version>4.1.0</version>
         <scope>compile</scope>
       </dependency>
       <dependency>
         <groupId>org.biojava</groupId>
-        <artifactId>biojava3-structure</artifactId>
-        <version>3.0.6</version>
+        <artifactId>biojava-structure</artifactId>
+        <version>4.1.0</version>
         <scope>compile</scope>
       </dependency>
     </dependencies>
