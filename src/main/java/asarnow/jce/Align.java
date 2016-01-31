@@ -1,7 +1,6 @@
 package asarnow.jce;
 
 import asarnow.jce.io.OutputHandler;
-import asarnow.jce.job.AlignmentJob;
 import asarnow.jce.job.JobSeries;
 import org.biojava.nbio.structure.*;
 import org.biojava.nbio.structure.align.StructureAlignment;
@@ -97,49 +96,25 @@ public class Align {
         return 0;
     }
 
-    public static int align(JobSeries<AlignmentJob> jobs, Executor pool, OutputHandler output) {
-        CompletionService<AlignmentJob> exec = new ExecutorCompletionService<>(Executors.newSingleThreadExecutor());
+    public static int align(JobSeries<AFPChain> jobs, Executor pool, OutputHandler output) {
         CompletionService<AFPChain> alignmentService = new ExecutorCompletionService<>(pool);
         int queued = 0;
         while (jobs.hasNext()) {
-            exec.submit(jobs.next());
+            alignmentService.submit(jobs.next());
             queued++;
         }
-        int aligned = 0;
-        int parsed = 0;
-        Future<AFPChain> futureAlignment = null;
-        Future<AlignmentJob> futureJob = null;
-        while (aligned + parsed < queued) {
-            try {
-                futureJob = exec.poll(100, TimeUnit.MILLISECONDS);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            if (futureJob != null) {
+        int received = 0;
+        while (received < queued) {
                 try {
-                    alignmentService.submit(futureJob.get());
-                } catch (ExecutionException | InterruptedException e) {
-                    e.printStackTrace();
-                } finally {
-                    parsed++;
-                }
-            }
-            try {
-                futureAlignment = alignmentService.poll(100, TimeUnit.MILLISECONDS);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            if (futureAlignment != null) {
-                try {
+                    Future<AFPChain> futureAlignment = alignmentService.take();
                     AFPChain afpChain = futureAlignment.get();
                     output.handle(afpChain);
                 } catch (InterruptedException | ExecutionException e) {
                     e.printStackTrace();
                 } finally {
-                    aligned++;
+                    received++;
                 }
             }
-        }
         output.close();
         return 0;
     }

@@ -1,9 +1,7 @@
-import asarnow.jce.Constants;
 import asarnow.jce.Utility;
 import asarnow.jce.io.OutputHandler;
 import asarnow.jce.io.TextOutput;
 import asarnow.jce.job.AlignmentJob;
-import asarnow.jce.job.ParseStructureJob;
 import org.biojava.nbio.structure.StructureException;
 import org.biojava.nbio.structure.align.ce.CeMain;
 import org.biojava.nbio.structure.align.ce.CeParameters;
@@ -30,10 +28,9 @@ public class AlignmentTest {
         AtomCache cache = Utility.initAtomCache(pdbDir);
         String id1 = "1a0a.A";
         String id2 = "1a0r.B";
-        ParseStructureJob parseJob = new ParseStructureJob(cache, id1, id2, CeMain.algorithmName, new CeParameters());
+        AlignmentJob alignJob = new AlignmentJob(cache, id1, id2, CeMain.algorithmName, new CeParameters());
         OutputHandler output = new TextOutput(cache, outputFile);
         try {
-            AlignmentJob alignJob = parseJob.call();
             output.handle(alignJob.call());
         } catch (IOException | StructureException e) {
             e.printStackTrace();

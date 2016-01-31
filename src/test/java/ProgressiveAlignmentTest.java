@@ -39,7 +39,7 @@ public class ProgressiveAlignmentTest {
         List<String> list2align = Utility.listFromFile(listFile);
         Utility.standardizeIds(list2align);
         if (list2align.contains(root)) list2align.remove(root);
-        JobSeries<AlignmentJob> jobs = new ProgressiveAlignmentJobSeries(list2align, root, cache, CeMain.algorithmName, new CeParameters());
+        JobSeries<AFPChain> jobs = new ProgressiveAlignmentJobSeries(list2align, root, cache, CeMain.algorithmName, new CeParameters());
         OutputHandler output = new ProgressiveOutput(cache, root, outputFile);
         Align.align(jobs, Utility.createThreadPool(4), output);
     }
