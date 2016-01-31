@@ -58,7 +58,7 @@ public class AlignmentJob implements Callable<AlignmentResult> {
 
         AFPChain result = aligner.align(target1.getValue(), target2.getValue());
         result.setName1(target1.getKey());
-        result.setName1(target2.getKey());
+        result.setName2(target2.getKey());
 
         return new AlignmentResult(result, target1.getValue(), target2.getValue());
     }
