@@ -3,28 +3,25 @@ package asarnow.jce.job;
 import asarnow.jce.Constants;
 import asarnow.jce.io.DaliImport;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.io.Writer;
+import java.io.*;
 import java.text.ParseException;
 import java.util.concurrent.BlockingQueue;
 
 /**
  * @author Daniel Asarnow
  */
-public class DaliImportDCCPDirJob extends FileOutputJob {
+public class DaliImportDCCPDir implements Runnable {
 
-    public DaliImportDCCPDirJob(BlockingQueue<String> queue, String filePath) {
+    BlockingQueue<String> queue;
+    File file;
+
+    public DaliImportDCCPDir(BlockingQueue<String> queue, String filePath) {
         this(queue, new File(filePath));
     }
 
-    public DaliImportDCCPDirJob(BlockingQueue<String> queue, File filePath) {
-        super(queue, filePath);
+    public DaliImportDCCPDir(BlockingQueue<String> queue, File filePath) {
+        this.queue = queue;
+        this.file = file;
     }
 
     @Override

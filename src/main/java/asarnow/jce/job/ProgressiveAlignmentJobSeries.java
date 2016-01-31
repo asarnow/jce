@@ -6,53 +6,48 @@ import org.biojava.nbio.structure.align.util.AtomCache;
 import java.util.List;
 
 /**
- * @author Daniel Asarnow
+ * (C) 1/28/16 Daniel Asarnow
  */
-public class PairwiseAlignmentJobSeries implements JobSeries<AlignmentJob> {
-
+public class ProgressiveAlignmentJobSeries implements JobSeries<AlignmentJob> {
     private final List<String> ids;
+    private final String root;
     private final AtomCache cache;
-    private int i = -1;
-    private int j;
-    private int cnt = 0;
+    private int i = 0;
     private int n;
     private String algorithmName;
     private ConfigStrucAligParams params;
 
-    public PairwiseAlignmentJobSeries(List<String> ids, AtomCache cache, String algorithmName, ConfigStrucAligParams params) {
+    public ProgressiveAlignmentJobSeries(List<String> ids, String root, AtomCache cache, String algorithmName, ConfigStrucAligParams params) {
         this.ids = ids;
-        this.j = ids.size();
+        this.root = root;
         this.cache = cache;
-        n = ids.size() * (ids.size()-1) / 2;
+        this.n = ids.size();
         this.algorithmName = algorithmName;
         this.params = params;
     }
 
     @Override
     public boolean hasNext() {
-        return cnt < n;
+        return i < n;
     }
 
     @Override
     public ParseStructureJob next() {
-        if (j==ids.size()) j = (++i)+1;
-        cnt++;
-        return new ParseStructureJob(cache, ids.get(i), ids.get(j++), algorithmName, params);
+        return new ParseStructureJob(cache, root, ids.get(i++), algorithmName, params);
     }
 
     @Override
     public int remaining() {
-        return n - cnt;
+        return n - i;
     }
 
     @Override
     public int completed() {
-        return cnt;
+        return i;
     }
 
     @Override
     public int total() {
         return n;
     }
-
 }

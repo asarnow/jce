@@ -7,7 +7,7 @@ import java.util.concurrent.BlockingQueue;
 /**
  * @author Daniel Asarnow
  */
-public class DaliListAlignmentJobSeries implements JobSeries {
+public class DaliListAlignmentJobSeries {
 
 
     private final List<String> ids;
@@ -28,12 +28,10 @@ public class DaliListAlignmentJobSeries implements JobSeries {
         }
     }
 
-    @Override
     public boolean hasNext() {
         return i<ids.size()-1;
     }
 
-    @Override
     public DaliListAlignmentJob next() {
         String id = ids.get(i);
         List<String> others = ids.subList(i+1,ids.size());
@@ -47,17 +45,14 @@ public class DaliListAlignmentJobSeries implements JobSeries {
         }
     }
 
-    @Override
     public int remaining() {
         return ids.size() - i;
     }
 
-    @Override
     public int completed() {
         return i;
     }
 
-    @Override
     public int total() {
         return ids.size();
     }

@@ -2,11 +2,7 @@ package asarnow.jce.job;
 
 import asarnow.jce.io.DaliImport;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Writer;
+import java.io.*;
 import java.text.ParseException;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -14,13 +10,17 @@ import java.util.concurrent.BlockingQueue;
 /**
  * @author Daniel Asarnow
  */
-public class DaliImportDCCPJob extends FileOutputJob {
+public class DaliImportDCCP implements Runnable {
 
-    public DaliImportDCCPJob(BlockingQueue<String> queue, File file) {
-        super(queue, file);
+    BlockingQueue<String> queue;
+    File file;
+
+    public DaliImportDCCP(BlockingQueue<String> queue, File file) {
+        this.queue = queue;
+        this.file = file;
     }
 
-    public DaliImportDCCPJob(BlockingQueue<String> queue, String filePath) {
+    public DaliImportDCCP(BlockingQueue<String> queue, String filePath) {
         this(queue, new File(filePath));
     }
 

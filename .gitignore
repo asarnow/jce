@@ -18,6 +18,7 @@
 *.exe
 *.o
 *.so
+target/
 
 # Packages #
 ############
@@ -39,10 +40,16 @@
 
 # OS generated files #
 ######################
-.DS_Store?
+.DS_Store
+._.DS_Store
 ehthumbs.db
 Icon?
 Thumbs.db
+
+# Project files
+.idea/**
+*.iml
+atlassian-ide-plugin.xml
 
 # Binary files
 *.mat

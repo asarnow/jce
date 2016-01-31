@@ -5,17 +5,28 @@ package asarnow.jce; /**
  * Time: 4:34 PM
  */
 
+import asarnow.jce.io.OutputHandler;
+import asarnow.jce.io.ProgressiveOutput;
+import asarnow.jce.io.SummaryOutput;
+import asarnow.jce.job.AlignmentJob;
+import asarnow.jce.job.JobSeries;
+import asarnow.jce.job.PairwiseAlignmentJobSeries;
+import asarnow.jce.job.ProgressiveAlignmentJobSeries;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
+import org.biojava.nbio.structure.align.ce.CeMain;
+import org.biojava.nbio.structure.align.ce.CeParameters;
+import org.biojava.nbio.structure.align.ce.ConfigStrucAligParams;
+import org.biojava.nbio.structure.align.fatcat.FatCatFlexible;
+import org.biojava.nbio.structure.align.fatcat.FatCatRigid;
+import org.biojava.nbio.structure.align.fatcat.calc.FatCatParameters;
+import org.biojava.nbio.structure.align.util.AtomCache;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 public class Main {
 
@@ -25,14 +36,14 @@ public class Main {
 	public static void main(String[] args) throws IOException{
         OptionParser parser = new OptionParser();
         // Aligner selection
-        OptionSpec fatcatArg = parser.acceptsAll(Arrays.asList("FATCAT","fatcat","fc"), "Align with FATCAT - flexible");
-        OptionSpec fatcatRigidArg = parser.acceptsAll(Arrays.asList("FATCAT-rigid","fatcat-rigid","fcr"), "Align with FATCAT - rigid");
+        OptionSpec fatcatArg = parser.acceptsAll(Arrays.asList("FATCAT-FLEX","fatcat-flex","fcf"), "Align with FATCAT_FLEX - flexible");
+        OptionSpec fatcatRigidArg = parser.acceptsAll(Arrays.asList("FATCAT","fatcat","fc","fcr"), "Align with FATCAT - rigid");
         OptionSpec ceArg = parser.acceptsAll(Arrays.asList("CE","ce"), "Align with CE (default)");
         OptionSpec daliArg = parser.acceptsAll(Arrays.asList("Dali","dali"),"Align using DaliLite external binary");
         // Aligner specific options
         // CE
 
-        // FATCAT
+        // FATCAT_FLEX
 
 
         // Structure selection
@@ -40,11 +51,20 @@ public class Main {
                                             requiredIf(daliArg).
                                             withRequiredArg().
                                             ofType(String.class);
+
+        // Multiple alignment
+        OptionSpec<String> multipleArg = parser.acceptsAll(Arrays.asList("multiple", "m"), "Multiple alignment").
+                                            withOptionalArg().
+                                            ofType(String.class);
+        OptionSpec<String> progressiveArg = parser.acceptsAll(Arrays.asList("root", "r"), "Specify root for progressive alignment").
+                                            requiredIf(multipleArg).
+                                            withRequiredArg().
+                                            ofType(String.class);
+
         // PDB files
         OptionSpec<String> dirArg = parser.acceptsAll(Arrays.asList("pdb","p"), "Specify PDB directory").
-                                            withRequiredArg().
-                                            ofType(String.class).
-                                            defaultsTo(Constants.CWD);
+                                            withOptionalArg().
+                                            ofType(String.class);
         OptionSpec unifiedPDB = parser.acceptsAll(Arrays.asList("unified","u"), "Use unified PDB directory");
         OptionSpec parseAllAtomsArg = parser.acceptsAll(Arrays.asList("parseall"),"Parse all atoms (default: parse CA only)");
 
@@ -77,73 +97,95 @@ public class Main {
             System.exit(0);
         }
 
-        List<String> noas = new LinkedList<>(opts.valuesOf(nonOpts));
-        List<String> noafiles = new ArrayList<>();
-        Iterator<String> it = noas.iterator();
+        List<String> nonOptArgs = new LinkedList<>(opts.valuesOf(nonOpts));
+        List<String> fileArgs = new ArrayList<>();
+        Iterator<String> it = nonOptArgs.iterator();
+
+        // After this fileArgs has files, nonOptArgs has non-files (e.g. PDB IDs).
         while (it.hasNext()) {
             String noa = it.next();
             if (new File(noa).exists()) {
                 it.remove();
-                noafiles.add(noa);
+                fileArgs.add(noa);
             }
         }
 
-        int alignerFlag = Constants.NOALIGN;
+        int nStructArgs = fileArgs.size() + nonOptArgs.size();
+
+        String algorithmName = null;
+        ConfigStrucAligParams params = null;
         if ( opts.has(ceArg) ) {
-            alignerFlag = Constants.CE;
+            algorithmName = CeMain.algorithmName;
+            params = new CeParameters();
         } else if ( opts.has(fatcatArg) ) {
-            alignerFlag = Constants.FATCAT;
+            algorithmName = FatCatFlexible.algorithmName;
+            params = new FatCatParameters();
         } else if ( opts.has(fatcatRigidArg) ) {
-            alignerFlag = Constants.FATCAT_RIGID;
+            algorithmName = FatCatRigid.algorithmName;
+            params = new FatCatParameters();
         } else if ( opts.has(daliArg) ) {
-            alignerFlag = Constants.DALI;
+            algorithmName = "Dali";
         }
 
-        String extractDir = null;
-        List<String> list2align = null;
-        if ( opts.has(listArg)) { // Using list
-            if ( opts.has(extractArg) ) {
-                extractDir = Data.createExtractDir( opts.hasArgument(extractArg) ? opts.valueOf(extractArg) : null );
-                List<String> list = Utility.listFromFile(opts.valueOf(listArg));
-                list2align = Data.extractStructures(list,
-                        opts.valueOf(dirArg),
-                        opts.has(unifiedPDB),
-                        Utility.createFileParsingParameters(!opts.has(parseAllAtomsArg)),
-                        extractDir,
-                        opts.has(compressArg));
-            } else {
-                list2align = Utility.listFromFile(opts.valueOf(listArg));
-            }
+//        String extractDir = null;
+//        List<String> list2align = null;
+//        if ( opts.has(listArg)) { // Using list
+//            if ( opts.has(extractArg) ) {
+//                extractDir = Data.createExtractDir( opts.hasArgument(extractArg) ? opts.valueOf(extractArg) : null );
+//                List<String> list = Utility.listFromFile(opts.valueOf(listArg));
+//                list2align = Data.extractStructures(list,
+//                        opts.valueOf(dirArg),
+//                        opts.has(unifiedPDB),
+//                        Utility.createFileParsingParameters(!opts.has(parseAllAtomsArg)),
+//                        extractDir,
+//                        opts.has(compressArg));
+//            } else {
+//                list2align = Utility.listFromFile(opts.valueOf(listArg));
+//            }
+//        }
+
+//        String pdbDir = opts.has(extractArg) ? extractDir : opts.valueOf(dirArg);
+        AtomCache cache;
+        if (opts.has(dirArg)) {
+            cache = Utility.initAtomCache(opts.valueOf(dirArg));
+        } else {
+            cache = Utility.initAtomCache(Constants.CWD);
         }
 
-        String pdbDir = opts.has(extractArg) ? extractDir : opts.valueOf(dirArg);
+        JobSeries<AlignmentJob> jobs;
+        OutputHandler output;
 
-        if ( alignerFlag != Constants.NOALIGN ) {
-            if ( opts.has(listArg) && noas.size()==0 ) {
-                System.exit( Align.alignList( list2align, pdbDir, opts.valueOf(outfileArg),
-                                !(opts.has(extractArg) || opts.has(unifiedPDB)),
-                                opts.valueOf(nprocArg), alignerFlag ) );
-//            } else if ( opts.has(listArg) && noas.size()>0 ) {
-                //TODO alignLists(noas, list2align, ...);
-            } else if (noas.size()==2) {
-                System.exit( Align.alignPair(noas.get(0),noas.get(1), pdbDir, !(opts.has(unifiedPDB) || pdbDir==null), alignerFlag) );
-            } else if (noas.size()>2) {
-                System.exit( Align.alignList( noas, pdbDir, opts.valueOf(outfileArg),
-                        false, opts.valueOf(nprocArg), alignerFlag ) );
+        if ( algorithmName != null ) {
+            if ( opts.has(listArg) && nonOptArgs.size() == 0 ) { // Just a list.
+                List<String> list2align = Utility.listFromFile(opts.valueOf(listArg));
+                Utility.standardizeIds(list2align);
+                if (opts.has(multipleArg)) {
+                    String root = Utility.standardizeId(opts.valueOf(progressiveArg));
+                    if (list2align.contains(root)) list2align.remove(root);
+                    jobs = new ProgressiveAlignmentJobSeries(list2align, root, cache, algorithmName, params);
+                    output = new ProgressiveOutput(cache, root, opts.valueOf(outfileArg));
+                } else {
+                    jobs = new PairwiseAlignmentJobSeries(list2align, cache, algorithmName, params);
+                    output = new SummaryOutput(opts.valueOf(outfileArg));
+                }
+                System.exit( Align.align(jobs, Utility.createThreadPool(opts.valueOf(nprocArg)), output) );
+            } else if (nStructArgs == 2) { // Just a pair.
+                throw new NotImplementedException();
+            } else if (nStructArgs > 2) { // Multiple ID/file arguments.
+                throw new NotImplementedException();
             }
         } else { // No alignment tasks
-            if (opts.has(distArg) && noafiles.size()==1) { // Convert alignment output to distance matrix
-                double[] matrix = Data.distanceMatrix(list2align, noafiles.get(0), opts.valueOf(distArg));
-                String[] strings = Data.doubles2strings(matrix);
-                if (opts.has(outfileArg)) {
-                    Utility.listToFile(opts.valueOf(outfileArg),Arrays.asList(strings));
-                } else {
-                    for (String s : strings) System.out.println(s);
-                }
-                System.exit(0);
+            if (opts.has(distArg) && fileArgs.size()==1) { // Convert alignment output to distance matrix
+//                double[] matrix = Data.distanceMatrix(list2align, fileArgs.get(0), opts.valueOf(distArg));
+//                String[] strings = Data.doubles2strings(matrix);
+//                if (opts.has(outfileArg)) {
+//                    Utility.listToFile(opts.valueOf(outfileArg),Arrays.asList(strings));
+//                } else {
+//                    for (String s : strings) System.out.println(s);
+//                }
+                throw new NotImplementedException();
             } else if (opts.has(infoArg)) { // Output info for structures
-                Data.printStructureInfo(noas, pdbDir, opts.has(unifiedPDB), Utility.createFileParsingParameters());
-                System.exit(0);
+                throw new NotImplementedException();
             }
         }
         // Incorrect arguments if we made it here.

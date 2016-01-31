@@ -12,11 +12,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author Daniel Asarnow
@@ -28,7 +24,7 @@ public class Data {
     }
 
     public static List<String> extractStructures(List<String> list, String pdbDir, Boolean divided, FileParsingParameters parameters, String extractDir, Boolean compressed) {
-        AtomCache cache = Utility.initAtomCache(pdbDir,divided,parameters);
+        AtomCache cache = Utility.initAtomCache(pdbDir,parameters);
         List<String> newlist = new ArrayList<>();
         for (String item : list) {
             try {
@@ -49,7 +45,7 @@ public class Data {
     }
 
     public static String extractStructure(String structureSpec, String pdbDir, Boolean divided, FileParsingParameters parameters, String extractDir, Boolean compressed) {
-        AtomCache cache = Utility.initAtomCache(pdbDir,divided,parameters);
+        AtomCache cache = Utility.initAtomCache(pdbDir,parameters);
         try {
             Structure structure = cache.getStructure(structureSpec);
             Utility.writePDB(structure, extractDir, compressed);
@@ -125,7 +121,7 @@ public class Data {
     }
 
     public static void printStructureInfo(List<String> ids, String pdbDir, Boolean divided, FileParsingParameters parameters) {
-        AtomCache cache = Utility.initAtomCache(pdbDir,divided);
+        AtomCache cache = Utility.initAtomCache(pdbDir);
         for (String id : ids) {
             try {
                 Structure structure = cache.getStructure(id);
@@ -137,6 +133,44 @@ public class Data {
                 e.printStackTrace();
             }
         }
+    }
 
+    public static int selectRepresentative(double[] matrix) {
+        int n = (int)(-0.5 + Math.sqrt(0.25 + 2 * matrix.length));
+        double[] means = new double[n];
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (i == j) continue;
+                int c = i < j ? i : j;
+                int r = i < j ? j : j;
+                means[i] += matrix[ sub2idxflat(c,r,matrix.length) ];
+            }
+            means[i] /= n;
+        }
+        return argmax(means);
+    }
+
+    public static int argmax(double[] arr) {
+        double curmax = Double.MIN_VALUE;
+        int idx = -1;
+        for (int i=0; i<arr.length; i++) {
+            if (arr[i] > curmax) {
+                curmax = arr[i];
+                idx = i;
+            }
+        }
+        return idx;
+    }
+
+    public static int argmin(double[] arr) {
+        double curmin = Double.MAX_VALUE;
+        int idx = -1;
+        for (int i=0; i<arr.length; i++) {
+            if (arr[i] < curmin) {
+                curmin = arr[i];
+                idx = i;
+            }
+        }
+        return idx;
     }
 }

@@ -81,6 +81,18 @@
         <version>4.1.0</version>
         <scope>compile</scope>
       </dependency>
+      <dependency>
+        <groupId>org.biojava</groupId>
+        <artifactId>biojava-structure-gui</artifactId>
+        <version>4.1.0</version>
+        <scope>compile</scope>
+      </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+            <version>4.12</version>
+        </dependency>
     </dependencies>
 
   <repositories>

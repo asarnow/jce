@@ -1,18 +1,17 @@
 package asarnow.jce;
 
 import org.biojava.nbio.structure.Structure;
+import org.biojava.nbio.structure.align.model.AFPChain;
 import org.biojava.nbio.structure.align.util.AtomCache;
 import org.biojava.nbio.structure.io.FileParsingParameters;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -60,14 +59,14 @@ public class Utility {
         writer.close();
     }
 
-    public static AtomCache initAtomCache(String pdbPath, Boolean divided, FileParsingParameters params) {
-        AtomCache cache = new AtomCache(pdbPath, divided);
+    public static AtomCache initAtomCache(String pdbPath, FileParsingParameters params) {
+        AtomCache cache = new AtomCache(pdbPath);
         cache.setFileParsingParams(params);
         return cache;
     }
 
-    public static AtomCache initAtomCache(String pdbPath, Boolean divided) {
-        return initAtomCache(pdbPath, divided, createFileParsingParameters());
+    public static AtomCache initAtomCache(String pdbPath) {
+        return initAtomCache(pdbPath, createFileParsingParameters());
     }
 
     public static FileParsingParameters createFileParsingParameters(boolean caOnly, boolean alignSeqRes, boolean secStruc, boolean chemCompInfo) {
@@ -139,5 +138,41 @@ public class Utility {
         return null;
     }
 
+    public static String summarizeAfpChain(AFPChain afpChain) {
+        return afpChain.getName1() + '\t' +
+                afpChain.getName2() + '\t' +
+                Double.toString(afpChain.getTotalRmsdOpt()) + '\t' +
+                Double.toString(afpChain.getAlignScore()) + '\t' +
+                Double.toString(afpChain.getProbability()) + '\t' +  // for fatcat, not a z-score!
+                Integer.toString(afpChain.getNrEQR()) + '\t' +
+                Double.toString(afpChain.getSimilarity()) +
+                System.getProperty("line.separator");
+    }
 
+    public static Executor createThreadPool(int nproc) {
+        return new ThreadPoolExecutor(
+            nproc, // core size
+            nproc, // max size
+            60, // idle timeout
+            TimeUnit.SECONDS,
+            new ArrayBlockingQueue<Runnable>(4096, true), // Fairness = true for FIFO
+            new ThreadPoolExecutor.CallerRunsPolicy() ); // If we have to reject a task, run it in the calling thread.
+    }
+
+    public static void standardizeIds(List<String> ids) {
+        for (int i=0; i < ids.size(); i++) {
+            String id = ids.get(i);
+            ids.set(i, standardizeId(id));
+        }
+    }
+
+    public static String standardizeId(String id) {
+        String newId;
+        if (id.length() == 5) {
+            newId = id.substring(0, 4).toLowerCase() + "." + id.substring(4).toUpperCase();
+        } else {
+            newId = id;
+        }
+        return newId;
+    }
 }
