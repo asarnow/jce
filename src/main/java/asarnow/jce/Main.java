@@ -15,6 +15,7 @@ import asarnow.jce.job.ProgressiveAlignmentJobSeries;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
+import org.apache.log4j.Logger;
 import org.biojava.nbio.structure.align.ce.CeMain;
 import org.biojava.nbio.structure.align.ce.CeParameters;
 import org.biojava.nbio.structure.align.ce.ConfigStrucAligParams;
@@ -22,13 +23,18 @@ import org.biojava.nbio.structure.align.fatcat.FatCatFlexible;
 import org.biojava.nbio.structure.align.fatcat.FatCatRigid;
 import org.biojava.nbio.structure.align.fatcat.calc.FatCatParameters;
 import org.biojava.nbio.structure.align.util.AtomCache;
+import org.biojava.nbio.structure.align.util.UserConfiguration;
+import org.biojava.nbio.structure.io.FileParsingParameters;
+import org.biojava.nbio.structure.io.LocalPDBDirectory;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.Executor;
 
 public class Main {
+    private static Logger logger = Logger.getLogger(Main.class);
 
 	/**
 	 * @param args Command line arguments
@@ -65,13 +71,17 @@ public class Main {
         OptionSpec<String> dirArg = parser.acceptsAll(Arrays.asList("pdb","p"), "Specify PDB directory").
                                             withOptionalArg().
                                             ofType(String.class);
-        OptionSpec unifiedPDB = parser.acceptsAll(Arrays.asList("unified","u"), "Use unified PDB directory");
-        OptionSpec parseAllAtomsArg = parser.acceptsAll(Arrays.asList("parseall"),"Parse all atoms (default: parse CA only)");
+
+        OptionSpec<Boolean> caOnlyArg = parser.acceptsAll(Arrays.asList("caonly"),"Parse CA atoms only")
+                .withOptionalArg().ofType(Boolean.class).defaultsTo(true);
 
         OptionSpec<String> extractArg = parser.acceptsAll(Arrays.asList("extract","e"), "Directory for extracted structures").
                                             withOptionalArg().
                                             ofType(String.class);
-        OptionSpec compressArg = parser.acceptsAll(Arrays.asList("compress","c"), "Compress extracted structures");
+        OptionSpec compressArg = parser.acceptsAll(Arrays.asList("compress","z"), "Compress generated structure files");
+
+        OptionSpec<String> chainArg = parser.acceptsAll(Arrays.asList("chain"), "Use first chain from ambiguous IDs").
+                withRequiredArg().ofType(String.class).defaultsTo("first");
 
         // Alignment control
         OptionSpec<Integer> nprocArg = parser.acceptsAll(Arrays.asList("nproc","n"), "Number of threads").
@@ -79,8 +89,9 @@ public class Main {
                                             ofType(Integer.class).
                                             defaultsTo(Constants.NPROC_DEFAULT);
         // Output
-        OptionSpec infoArg = parser.acceptsAll(Arrays.asList("info","i"),"Print information about structures listed on command line");
-        OptionSpec<String> outfileArg = parser.acceptsAll(Arrays.asList("outfile","o"), "output file").
+        OptionSpec<Integer> infoArg = parser.acceptsAll(Arrays.asList("info","i"),"Print structure information with indicated verbosity").
+                withOptionalArg().ofType(Integer.class).defaultsTo(0);
+        OptionSpec<String> outfileArg = parser.acceptsAll(Arrays.asList("outfile","o"), "Output file").
                                             withRequiredArg().
                                             ofType(String.class);
         OptionSpec<Integer> distArg = parser.acceptsAll(Arrays.asList("distances","d"),"Generate distance matrix from list and alignment files").
@@ -127,55 +138,90 @@ public class Main {
             algorithmName = "Dali";
         }
 
-//        String extractDir = null;
-//        List<String> list2align = null;
-//        if ( opts.has(listArg)) { // Using list
-//            if ( opts.has(extractArg) ) {
-//                extractDir = Data.createExtractDir( opts.hasArgument(extractArg) ? opts.valueOf(extractArg) : null );
-//                List<String> list = Utility.listFromFile(opts.valueOf(listArg));
-//                list2align = Data.extractStructures(list,
-//                        opts.valueOf(dirArg),
-//                        opts.has(unifiedPDB),
-//                        Utility.createFileParsingParameters(!opts.has(parseAllAtomsArg)),
-//                        extractDir,
-//                        opts.has(compressArg));
-//            } else {
-//                list2align = Utility.listFromFile(opts.valueOf(listArg));
-//            }
-//        }
 
-//        String pdbDir = opts.has(extractArg) ? extractDir : opts.valueOf(dirArg);
-        AtomCache cache;
+        String pdbDir = System.getProperty("PDB_DIR");
         if (opts.has(dirArg)) {
-            cache = Utility.initAtomCache(opts.valueOf(dirArg));
-        } else {
-            cache = Utility.initAtomCache(Constants.CWD);
+            pdbDir = opts.valueOf(dirArg);
+            System.setProperty("PDB_DIR", pdbDir);
         }
 
-        JobSeries<AlignmentResult> jobs;
-        OutputHandler output;
+        UserConfiguration configuration = new UserConfiguration();
+        configuration.setFileFormat(UserConfiguration.PDB_FORMAT);
+        FileParsingParameters fileParams = new FileParsingParameters();
+        fileParams.setHeaderOnly(false);
+        fileParams.setParseCAOnly(opts.valueOf(caOnlyArg));
+        fileParams.setAlignSeqRes(true);
+        LocalPDBDirectory.ObsoleteBehavior obsoleteBehavior = LocalPDBDirectory.ObsoleteBehavior.FETCH_CURRENT;
+        LocalPDBDirectory.FetchBehavior fetchBehavior = LocalPDBDirectory.FetchBehavior.FETCH_REMEDIATED;
+        configuration.setFetchBehavior(fetchBehavior);
+        configuration.setObsoleteBehavior(obsoleteBehavior);
+        configuration.setPdbFilePath(pdbDir);
+        configuration.setCacheFilePath(pdbDir);
 
-        if ( algorithmName != null ) {
-            if ( opts.has(listArg) && nonOptArgs.size() == 0 ) { // Just a list.
-                List<String> list2align = Utility.listFromFile(opts.valueOf(listArg));
-                list2align = Utility.standardizeIds(list2align);
-                if (opts.has(multipleArg)) {
-                    String root = Utility.standardizeId(opts.valueOf(progressiveArg));
-                    if (list2align.contains(root)) list2align.remove(root);
+        AtomCache cache = new AtomCache(configuration);
+        cache.setFileParsingParams(fileParams);
+        cache.setUseMmCif(false);
+
+        Executor pool = Utility.createThreadPool(opts.valueOf(nprocArg));
+
+        String extractDir = opts.hasArgument(extractArg) ? opts.valueOf(extractArg) : null;
+
+        List<String> list2align = null;
+        String root = null;
+        if (nStructArgs > 0 || opts.has(listArg)) {
+            List<String> inputList;
+            if ( opts.has(listArg)) { // Using list
+                inputList = Utility.listFromFile(opts.valueOf(listArg));
+                inputList.addAll(nonOptArgs);
+            } else {
+                inputList = nonOptArgs;
+            }
+            list2align = Utility.standardizeIds(inputList);
+
+            if (opts.has(infoArg)) { // Output info for structures
+                for (String id : list2align) {
+                    Utility.printStructureInfo(cache, id, opts.valueOf(infoArg));
+                }
+                System.exit(0);
+            }
+
+            if (opts.has(progressiveArg)) {
+                root = Utility.standardizeId(opts.valueOf(progressiveArg));
+                root = Utility.firstChainOnly(Arrays.asList(root), configuration.getPdbFilePath(), obsoleteBehavior).get(0);
+            }
+            if (opts.valueOf(chainArg).toLowerCase().startsWith("f") || opts.valueOf(chainArg).equals("1")) {
+                list2align = Utility.firstChainOnlyAsync(list2align, configuration.getPdbFilePath(), obsoleteBehavior, pool);
+            } else {
+                list2align = Utility.expandStructuresAsync(list2align, configuration.getPdbFilePath(), obsoleteBehavior, pool);
+            }
+
+            if ( opts.has(extractArg) ) {
+                extractDir = Utility.createExtractDir( extractDir );
+                List<String> list2extract = new ArrayList<>(list2align);
+                if (root != null) list2extract.add(root);
+                Utility.extractStructures(list2extract, cache, extractDir, opts.has(compressArg));
+            }
+
+            if (algorithmName != null) {
+                JobSeries<AlignmentResult> jobs;
+                OutputHandler output;
+                if (opts.has(progressiveArg)) {
+                    list2align.remove(root);
                     jobs = new ProgressiveAlignmentJobSeries(list2align, root, cache, algorithmName, params);
-                    output = new ProgressiveOutput(cache, root, opts.valueOf(outfileArg));
                 } else {
                     jobs = new PairwiseAlignmentJobSeries(list2align, cache, algorithmName, params);
+                }
+                if (opts.has(multipleArg)) {
+                    output = new ProgressiveOutput(cache, root, opts.valueOf(outfileArg));
+                } else {
                     output = new SummaryOutput(opts.valueOf(outfileArg));
                 }
-                System.exit( Align.align(jobs, Utility.createThreadPool(opts.valueOf(nprocArg)), output) );
-            } else if (nStructArgs == 2) { // Just a pair.
-                throw new NotImplementedException();
-            } else if (nStructArgs > 2) { // Multiple ID/file arguments.
-                throw new NotImplementedException();
+                System.exit( Align.align(jobs, pool, output) );
             }
-        } else { // No alignment tasks
-            if (opts.has(distArg) && fileArgs.size()==1) { // Convert alignment output to distance matrix
+
+        }
+
+        if (opts.has(distArg) && fileArgs.size()==1) { // Convert alignment output to distance matrix
 //                double[] matrix = Data.distanceMatrix(list2align, fileArgs.get(0), opts.valueOf(distArg));
 //                String[] strings = Data.doubles2strings(matrix);
 //                if (opts.has(outfileArg)) {
@@ -183,10 +229,7 @@ public class Main {
 //                } else {
 //                    for (String s : strings) System.out.println(s);
 //                }
-                throw new NotImplementedException();
-            } else if (opts.has(infoArg)) { // Output info for structures
-                throw new NotImplementedException();
-            }
+            throw new NotImplementedException();
         }
         // Incorrect arguments if we made it here.
         System.exit(1);

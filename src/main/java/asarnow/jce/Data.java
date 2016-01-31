@@ -1,9 +1,12 @@
 package asarnow.jce;
 
+import org.apache.log4j.Logger;
 import org.biojava.nbio.structure.Structure;
 import org.biojava.nbio.structure.StructureException;
 import org.biojava.nbio.structure.align.util.AtomCache;
 import org.biojava.nbio.structure.io.FileParsingParameters;
+import org.biojava.nbio.structure.io.LocalPDBDirectory;
+import org.biojava.nbio.structure.io.PDBFileReader;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -18,57 +21,7 @@ import java.util.*;
  * @author Daniel Asarnow
  */
 public class Data {
-
-    public static List<String> extractStructures(List<String> list, String pdbDir, Boolean divided, String extractDir, Boolean compressed) {
-        return extractStructures(list, pdbDir, divided, Utility.createFileParsingParameters(), extractDir, compressed);
-    }
-
-    public static List<String> extractStructures(List<String> list, String pdbDir, Boolean divided, FileParsingParameters parameters, String extractDir, Boolean compressed) {
-        AtomCache cache = Utility.initAtomCache(pdbDir,parameters);
-        List<String> newlist = new ArrayList<>();
-        for (String item : list) {
-            try {
-                Structure structure = cache.getStructure(item);
-
-                Utility.writePDB(structure, extractDir, compressed);
-                newlist.add(structure.getName());
-            } catch (IOException | StructureException e) {
-                e.printStackTrace();
-            }
-        }
-        return newlist;
-
-    }
-
-    public static String extractStructure(String structureSpec, String pdbDir, Boolean divided, String extractDir, Boolean compressed) {
-        return extractStructure(structureSpec, pdbDir, divided, Utility.createFileParsingParameters(), extractDir, compressed);
-    }
-
-    public static String extractStructure(String structureSpec, String pdbDir, Boolean divided, FileParsingParameters parameters, String extractDir, Boolean compressed) {
-        AtomCache cache = Utility.initAtomCache(pdbDir,parameters);
-        try {
-            Structure structure = cache.getStructure(structureSpec);
-            Utility.writePDB(structure, extractDir, compressed);
-            return structure.getName();
-        } catch (IOException | StructureException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    public static String createExtractDir(String pathname) throws IOException {
-        Path extractPath;
-        if (pathname!=null) {
-            extractPath = Paths.get(pathname);
-        } else {
-            extractPath = Files.createTempDirectory(Constants.TEMP_DIR_PREFIX);
-        }
-        return extractPath.toString();
-    }
-
-    public static String getStructureInfo(String id) {
-        return null;
-    }
+    private static Logger logger = Logger.getLogger(Data.class);
 
     public static double[] distanceMatrix(List<String> ids, String alignFilePath, int field) {
         Map<String,Integer> index = new HashMap<>( ids.size() );
@@ -118,21 +71,6 @@ public class Data {
         String[] strings = new String[ints.length];
         for (int i=0; i<ints.length; i++) strings[i] = Double.toString(ints[i]);
         return strings;
-    }
-
-    public static void printStructureInfo(List<String> ids, String pdbDir, Boolean divided, FileParsingParameters parameters) {
-        AtomCache cache = Utility.initAtomCache(pdbDir);
-        for (String id : ids) {
-            try {
-                Structure structure = cache.getStructure(id);
-                String info = "Structure specification " + id + " yields\n" +
-                        structure.getPDBHeader().toPDB() + "\n";
-                System.out.print(info);
-            } catch (IOException | StructureException e) {
-                System.out.println("Exception on structure specification " + id);
-                e.printStackTrace();
-            }
-        }
     }
 
     public static int selectRepresentative(double[] matrix) {

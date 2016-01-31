@@ -4,7 +4,6 @@ import asarnow.jce.Utility;
 import asarnow.jce.job.AlignmentResult;
 import org.biojava.nbio.structure.Structure;
 import org.biojava.nbio.structure.StructureException;
-import org.biojava.nbio.structure.StructureImpl;
 import org.biojava.nbio.structure.align.gui.DisplayAFP;
 import org.biojava.nbio.structure.align.util.AtomCache;
 
@@ -54,16 +53,14 @@ public class ProgressiveOutput implements OutputHandler {
     @Override
     public void handle(AlignmentResult result) {
         try {
-            if (progressive == null) {
-                this.progressive = new StructureImpl();
-                Structure root = cache.getStructure(rootId);
-                Structure progressive = new StructureImpl();
-                progressive.addModel(root.getChains());
-            }
             System.out.print(Utility.summarizeAfpChain(result.getAfpChain()));
-            Structure artificial = DisplayAFP.createArtificalStructure(result.getAfpChain(), result.getCa1(), result.getCa2());
-            progressive.addModel(artificial.getModel(1));
-        } catch (IOException | StructureException e) {
+            if (progressive == null) {
+                progressive = DisplayAFP.createArtificalStructure(result.getAfpChain(), result.getCa1(), result.getCa2());
+            } else {
+                Structure artificial = DisplayAFP.createArtificalStructure(result.getAfpChain(), result.getCa1(), result.getCa2());
+                progressive.addModel(artificial.getModel(1));
+            }
+        } catch (   StructureException e) {
             e.printStackTrace();
         }
     }

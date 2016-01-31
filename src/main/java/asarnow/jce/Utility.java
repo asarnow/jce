@@ -1,19 +1,24 @@
 package asarnow.jce;
 
+import org.apache.log4j.Logger;
+import org.biojava.nbio.structure.Chain;
 import org.biojava.nbio.structure.Structure;
+import org.biojava.nbio.structure.StructureException;
 import org.biojava.nbio.structure.align.model.AFPChain;
 import org.biojava.nbio.structure.align.util.AtomCache;
 import org.biojava.nbio.structure.io.FileParsingParameters;
+import org.biojava.nbio.structure.io.LocalPDBDirectory;
+import org.biojava.nbio.structure.io.PDBFileReader;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -24,19 +29,20 @@ import java.util.zip.ZipOutputStream;
  * Time: 10:24 PM
  */
 public class Utility {
+    private static Logger logger = Logger.getLogger(Utility.class);
 
     public static List<String> listFromFile(String file) {
         return listFromFile(new File(file));
     }
 
-    public static List<String> listFromFile(File listFilePath){
+    public static List<String> listFromFile(File listFilePath) {
         List<String> list = new ArrayList<>();
-        try{
+        try {
             BufferedReader br;
             br = new BufferedReader(new FileReader(listFilePath));
             String line;
-            while ( ( line = br.readLine() ) != null ) {
-                if ( !line.startsWith("#") && line.trim().length() > 0 ){
+            while ((line = br.readLine()) != null) {
+                if (!line.startsWith("#") && line.trim().length() > 0) {
                     list.add(line);
                 }
             }
@@ -48,23 +54,36 @@ public class Utility {
     }
 
     public static void listToFile(String filePath, List<String> lines) throws IOException {
-        listToFile(new File(filePath),lines);
+        listToFile(new File(filePath), lines);
     }
 
     public static void listToFile(File filePath, List<String> lines) throws IOException {
         BufferedWriter writer = new BufferedWriter(new FileWriter(filePath));
-        for (String line : lines.subList(0,lines.size()-1)) {
+        for (String line : lines.subList(0, lines.size() - 1)) {
             writer.write(line);
             writer.newLine();
         }
-        writer.write(lines.get(lines.size()-1));
+        writer.write(lines.get(lines.size() - 1));
         writer.close();
     }
 
-    public static AtomCache initAtomCache(String pdbPath, FileParsingParameters params) {
+    public static AtomCache initAtomCache(String pdbPath,
+                                          FileParsingParameters params,
+                                          LocalPDBDirectory.ObsoleteBehavior obsoleteBehavior,
+                                          LocalPDBDirectory.FetchBehavior fetchBehavior) {
         AtomCache cache = new AtomCache(pdbPath);
         cache.setFileParsingParams(params);
+        cache.setObsoleteBehavior(obsoleteBehavior);
+        cache.setFetchBehavior(fetchBehavior);
         return cache;
+    }
+
+    public static AtomCache initAtomCache(String pdbPath, FileParsingParameters params, LocalPDBDirectory.ObsoleteBehavior behavior) {
+        return initAtomCache(pdbPath, params, behavior, LocalPDBDirectory.FetchBehavior.DEFAULT);
+    }
+
+    public static AtomCache initAtomCache(String pdbPath, FileParsingParameters params) {
+        return initAtomCache(pdbPath, params, LocalPDBDirectory.ObsoleteBehavior.DEFAULT);
     }
 
     public static AtomCache initAtomCache(String pdbPath) {
@@ -79,6 +98,7 @@ public class Utility {
         parameters.setParseCAOnly(caOnly);
         return parameters;
     }
+
     public static FileParsingParameters createFileParsingParameters() {
         return createFileParsingParameters(true, false, false, false);
     }
@@ -95,20 +115,20 @@ public class Utility {
         return createFileParsingParameters(caOnly, alignSeqRes, secStruc, false);
     }
 
-    public static boolean pdbFileExists(String id, String pdbDir, boolean divided){
+    public static boolean pdbFileExists(String id, String pdbDir, boolean divided) {
         String path;
-        if (!divided){
-            if ( pdbDir.endsWith(System.getProperty("file.separator")) ){
-                path = pdbDir + "pdb" + id.substring(0,4).toLowerCase() + ".ent.gz";
+        if (!divided) {
+            if (pdbDir.endsWith(System.getProperty("file.separator"))) {
+                path = pdbDir + "pdb" + id.substring(0, 4).toLowerCase() + ".ent.gz";
             } else {
-                path = pdbDir + System.getProperty("file.separator") + "pdb" + id.substring(0,4).toLowerCase() + ".ent.gz";
+                path = pdbDir + System.getProperty("file.separator") + "pdb" + id.substring(0, 4).toLowerCase() + ".ent.gz";
             }
         } else {
-            String sepDir = id.substring(1,3).toLowerCase();
-            if ( pdbDir.endsWith(System.getProperty("file.separator")) ){
-                path = pdbDir + sepDir + System.getProperty("file.separator") + "pdb" + id.substring(0,4).toLowerCase() + ".ent.gz";
+            String sepDir = id.substring(1, 3).toLowerCase();
+            if (pdbDir.endsWith(System.getProperty("file.separator"))) {
+                path = pdbDir + sepDir + System.getProperty("file.separator") + "pdb" + id.substring(0, 4).toLowerCase() + ".ent.gz";
             } else {
-                path = pdbDir + System.getProperty("file.separator") + sepDir + "/pdb" + id.substring(0,4).toLowerCase() + ".ent.gz";
+                path = pdbDir + System.getProperty("file.separator") + sepDir + "/pdb" + id.substring(0, 4).toLowerCase() + ".ent.gz";
             }
         }
 
@@ -116,7 +136,7 @@ public class Utility {
     }
 
     public static void writePDB(Structure structure, String extractDir) throws IOException {
-        writePDB(structure,extractDir,true);
+        writePDB(structure, extractDir, true);
     }
 
     public static void writePDB(Structure structure, String extractDir, boolean compressed) throws IOException {
@@ -124,14 +144,14 @@ public class Utility {
         String path = extractDir + File.separator + name;
 
         if (compressed) {
-            ZipOutputStream zipOutputStream = new ZipOutputStream(new FileOutputStream(path+".gz"));
+            ZipOutputStream zipOutputStream = new ZipOutputStream(new FileOutputStream(path + ".gz"));
             zipOutputStream.putNextEntry(new ZipEntry(name));
-            zipOutputStream.write( structure.toPDB().getBytes() );
+            zipOutputStream.write(structure.toPDB().getBytes());
             zipOutputStream.closeEntry();
             zipOutputStream.close();
         } else {
             FileOutputStream fileOutputStream = new FileOutputStream(path);
-            fileOutputStream.write( structure.toPDB().getBytes() );
+            fileOutputStream.write(structure.toPDB().getBytes());
         }
 
     }
@@ -153,12 +173,12 @@ public class Utility {
 
     public static Executor createThreadPool(int nproc) {
         return new ThreadPoolExecutor(
-            nproc, // core size
-            nproc, // max size
-            60, // idle timeout
-            TimeUnit.SECONDS,
-            new ArrayBlockingQueue<Runnable>(4096, true), // Fairness = true for FIFO
-            new ThreadPoolExecutor.CallerRunsPolicy() ); // If we have to reject a task, run it in the calling thread.
+                nproc, // core size
+                nproc, // max size
+                60, // idle timeout
+                TimeUnit.SECONDS,
+                new ArrayBlockingQueue<Runnable>(4096, true), // Fairness = true for FIFO
+                new ThreadPoolExecutor.CallerRunsPolicy()); // If we have to reject a task, run it in the calling thread.
     }
 
     public static List<String> standardizeIds(List<String> ids) {
@@ -177,5 +197,229 @@ public class Utility {
             newId = id;
         }
         return newId;
+    }
+
+    public static List<String> expandStructures(List<String> list2align,
+                                                String pdbDir,
+                                                LocalPDBDirectory.ObsoleteBehavior obsoleteBehavior) {
+        FileParsingParameters params = new FileParsingParameters();
+        params.setAlignSeqRes(false);
+        params.setParseCAOnly(true);
+        AtomCache cache = initAtomCache(pdbDir, params, obsoleteBehavior);
+        List<String> newList = new ArrayList<>();
+        for (String id : list2align) {
+            try {
+                String newId;
+                Structure s = cache.getStructure(id);
+                for (Chain ch : s.getChains()) {
+                    newId = s.getPdbId() + "." + ch.getChainID();
+                    newList.add(newId);
+                }
+            } catch (IOException | StructureException e) {
+                e.printStackTrace();
+            }
+        }
+        return newList;
+    }
+
+    public static List<String> expandStructuresAsync(List<String> list2align,
+                                                String pdbDir,
+                                                LocalPDBDirectory.ObsoleteBehavior obsoleteBehavior,
+                                                Executor executor) {
+        class ExpandStructure implements Callable<List<String>> {
+            String id;
+            AtomCache cache;
+
+            ExpandStructure(String id, AtomCache cache) {
+                this.id = id;
+                this.cache = cache;
+            }
+
+            @Override
+            public List<String> call() throws Exception {
+                Structure s = cache.getStructure(id);
+                List<String> newList = new ArrayList<>();
+                for (Chain ch : s.getChains()) {
+                    String newId = s.getPdbId() + "." + ch.getChainID();
+                    newList.add(newId);
+                }
+                return newList;
+            }
+        }
+        FileParsingParameters params = new FileParsingParameters();
+        params.setAlignSeqRes(false);
+        params.setParseCAOnly(true);
+        AtomCache cache = initAtomCache(pdbDir, params, obsoleteBehavior);
+        CompletionService<List<String>> executorService = new ExecutorCompletionService<List<String>>(executor);
+        List<String> newList = new ArrayList<>();
+        int queued = 0;
+        for (String id : list2align) {
+            executorService.submit(new ExpandStructure(id, cache));
+            queued++;
+        }
+        while (queued > 0) {
+            try {
+                newList.addAll(executorService.take().get());
+            } catch (InterruptedException | ExecutionException e) {
+                logger.error(e);
+            } finally {
+                queued--;
+            }
+        }
+        return newList;
+    }
+
+    public static List<String> firstChainOnly(List<String> list2align,
+                                                String pdbDir,
+                                                LocalPDBDirectory.ObsoleteBehavior obsoleteBehavior) {
+        FileParsingParameters params = new FileParsingParameters();
+        params.setAlignSeqRes(false);
+        params.setParseCAOnly(true);
+        AtomCache cache = initAtomCache(pdbDir, params, obsoleteBehavior);
+        List<String> newList = new ArrayList<>();
+        for (String id : list2align) {
+            try {
+                String newId;
+                Structure s = cache.getStructure(id);
+                if (s.getChains().size() > 1) {
+                    newId = s.getPdbId() + "." + s.getChain(0).getChainID();
+                    newList.add(newId);
+                } else {
+                    newList.add(id);
+                }
+            } catch (IOException | StructureException e) {
+                e.printStackTrace();
+            }
+        }
+        return newList;
+    }
+
+    public static List<String> firstChainOnlyAsync(List<String> list2align,
+                                                   String pdbDir,
+                                                   LocalPDBDirectory.ObsoleteBehavior obsoleteBehavior,
+                                                   Executor executor) {
+
+        class FirstChain implements Callable<String> {
+            String id;
+            AtomCache cache;
+            FirstChain(String id, AtomCache cache){
+                this.id = id;
+                this.cache = cache;
+            }
+            @Override
+            public String call() throws Exception {
+                String newId;
+                Structure s = cache.getStructure(id);
+                if (s.getChains().size() > 1) {
+                    newId = s.getPdbId() + "." + s.getChain(0).getChainID();
+                } else {
+                    newId = id;
+                }
+                return newId;
+            }
+        }
+        FileParsingParameters params = new FileParsingParameters();
+        params.setAlignSeqRes(false);
+        params.setParseCAOnly(true);
+        AtomCache cache = initAtomCache(pdbDir, params, obsoleteBehavior);
+        List<String> newList = new ArrayList<>();
+        CompletionService<String> executorService = new ExecutorCompletionService<>(executor);
+        int queued = 0;
+        for (String id : list2align) {
+            executorService.submit(new FirstChain(id, cache));
+            queued++;
+        }
+        while (queued > 0) {
+            try {
+                newList.add(executorService.take().get());
+            } catch (ExecutionException | InterruptedException e) {
+                logger.error(e);
+            } finally {
+                queued--;
+            }
+        }
+        return newList;
+    }
+
+    public static void printStructureInfo(AtomCache cache, String id, int verbosity) {
+        try {
+            Structure s = cache.getStructure(id);
+            System.out.println("Query: " + id + " Name: " + s.getName() +
+                    " Ident: " + s.getIdentifier() + " PdbId: " + s.getPdbId() + " PdbCode: " + s.getPDBCode());
+            if (verbosity > 1) System.out.println(s.getPDBHeader());
+            if (verbosity > 0) {
+                for (Chain ch : s.getChains()) {
+                    System.out.print("Chain " + ch.getChainID() + ": " + ch.getAtomLength() + " residues");
+                    if (ch.getSeqResSequence() != null) System.out.print(" (" + ch.getSeqResLength() + " by SeqRes)");
+                    System.out.print(System.lineSeparator());
+                }
+            }
+        } catch (IOException | StructureException e) {
+            logger.error("Error loading " + id, e);
+        }
+
+    }
+
+    public static List<String> prefetchStructures(List<String> list,
+                                                 String pdbDir,
+                                                 FileParsingParameters parameters,
+                                                 LocalPDBDirectory.ObsoleteBehavior behavior) {
+        LocalPDBDirectory reader = new PDBFileReader(pdbDir);
+        reader.setFileParsingParameters(parameters);
+        reader.setObsoleteBehavior(behavior);
+        reader.setFetchBehavior(LocalPDBDirectory.FetchBehavior.DEFAULT);
+        List<String> newlist = new ArrayList<>();
+        for (String item : list) {
+            try {
+                reader.prefetchStructure(item);
+                newlist.add(item);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return newlist;
+    }
+
+    public static List<String> extractStructures(List<String> list,
+                                                 AtomCache cache,
+                                                 String extractDir,
+                                                 Boolean compressed) {
+        List<String> newlist = new ArrayList<>();
+        for (String item : list) {
+            try {
+                Structure structure = cache.getStructure(item);
+                writePDB(structure, extractDir, compressed);
+                newlist.add(structure.getName());
+            } catch (IOException | StructureException | NullPointerException e) {
+                logger.error("Error extracting " + item, e);
+            }
+        }
+        return newlist;
+    }
+
+    public static String extractStructure(String structureSpec, String pdbDir, Boolean divided, String extractDir, Boolean compressed) {
+        return extractStructure(structureSpec, pdbDir, divided, createFileParsingParameters(), extractDir, compressed);
+    }
+
+    public static String extractStructure(String structureSpec, String pdbDir, Boolean divided, FileParsingParameters parameters, String extractDir, Boolean compressed) {
+        AtomCache cache = initAtomCache(pdbDir,parameters);
+        try {
+            Structure structure = cache.getStructure(structureSpec);
+            writePDB(structure, extractDir, compressed);
+            return structure.getName();
+        } catch (IOException | StructureException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public static String createExtractDir(String pathname) throws IOException {
+        Path extractPath;
+        if (pathname!=null) {
+            extractPath = Paths.get(pathname);
+        } else {
+            extractPath = Files.createTempDirectory(Constants.TEMP_DIR_PREFIX);
+        }
+        return extractPath.toString();
     }
 }

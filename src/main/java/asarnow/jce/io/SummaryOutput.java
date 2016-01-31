@@ -3,7 +3,10 @@ package asarnow.jce.io;
 import asarnow.jce.Utility;
 import asarnow.jce.job.AlignmentResult;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
 
 /**
  * Created by IntelliJ IDEA.
@@ -14,7 +17,7 @@ import java.io.*;
 public class SummaryOutput implements OutputHandler {
 
     File file;
-    private Writer output;
+    private PrintStream output;
     private boolean opened;
 
     public SummaryOutput(File file) {
@@ -23,12 +26,16 @@ public class SummaryOutput implements OutputHandler {
     }
 
     public SummaryOutput(String filePath) {
-        this(new File(filePath));
+        this(filePath == null ? null : new File(filePath));
     }
 
     private void open() {
         try {
-            output = new BufferedWriter(new FileWriter(this.file));
+            if (file == null) {
+                output = new PrintStream(System.out);
+            } else {
+                output = new PrintStream(new FileOutputStream(this.file));
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -37,20 +44,12 @@ public class SummaryOutput implements OutputHandler {
 
     @Override
     public void handle(AlignmentResult result) {
-        try {
-            output.write(Utility.summarizeAfpChain(result.getAfpChain()));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        output.print(Utility.summarizeAfpChain(result.getAfpChain()));
     }
 
     @Override
     public void close() {
-        try {
-            output.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        output.close();
         opened = false;
     }
 
