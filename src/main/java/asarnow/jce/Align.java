@@ -111,7 +111,7 @@ public class Align {
         Future<AlignmentJob> futureJob = null;
         while (aligned + parsed < queued) {
             try {
-                futureJob = exec.poll(250, TimeUnit.MILLISECONDS);
+                futureJob = exec.poll(100, TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -125,14 +125,13 @@ public class Align {
                 }
             }
             try {
-                futureAlignment = alignmentService.poll(250, TimeUnit.MILLISECONDS);
+                futureAlignment = alignmentService.poll(100, TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
             if (futureAlignment != null) {
                 try {
                     AFPChain afpChain = futureAlignment.get();
-                    // queue.put(afpChain)
                     output.handle(afpChain);
                 } catch (InterruptedException | ExecutionException e) {
                     e.printStackTrace();
