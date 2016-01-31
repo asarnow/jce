@@ -1,6 +1,7 @@
 package asarnow.jce;
 
 import asarnow.jce.io.OutputHandler;
+import asarnow.jce.job.AlignmentResult;
 import asarnow.jce.job.JobSeries;
 import org.biojava.nbio.structure.*;
 import org.biojava.nbio.structure.align.StructureAlignment;
@@ -96,8 +97,8 @@ public class Align {
         return 0;
     }
 
-    public static int align(JobSeries<AFPChain> jobs, Executor pool, OutputHandler output) {
-        CompletionService<AFPChain> alignmentService = new ExecutorCompletionService<>(pool);
+    public static int align(JobSeries<AlignmentResult> jobs, Executor pool, OutputHandler output) {
+        CompletionService<AlignmentResult> alignmentService = new ExecutorCompletionService<>(pool);
         int queued = 0;
         while (jobs.hasNext()) {
             alignmentService.submit(jobs.next());
@@ -106,9 +107,9 @@ public class Align {
         int received = 0;
         while (received < queued) {
                 try {
-                    Future<AFPChain> futureAlignment = alignmentService.take();
-                    AFPChain afpChain = futureAlignment.get();
-                    output.handle(afpChain);
+                    Future<AlignmentResult> futureAlignment = alignmentService.take();
+                    AlignmentResult result = futureAlignment.get();
+                    output.handle(result);
                 } catch (InterruptedException | ExecutionException e) {
                     e.printStackTrace();
                 } finally {

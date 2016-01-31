@@ -1,9 +1,11 @@
 package asarnow.jce.io;
 
 import asarnow.jce.Utility;
-import org.biojava.nbio.structure.*;
+import asarnow.jce.job.AlignmentResult;
+import org.biojava.nbio.structure.Structure;
+import org.biojava.nbio.structure.StructureException;
+import org.biojava.nbio.structure.StructureImpl;
 import org.biojava.nbio.structure.align.gui.DisplayAFP;
-import org.biojava.nbio.structure.align.model.AFPChain;
 import org.biojava.nbio.structure.align.util.AtomCache;
 
 import java.io.*;
@@ -18,7 +20,6 @@ public class ProgressiveOutput implements OutputHandler {
     String rootId;
     boolean opened;
     Structure progressive;
-    Atom[] rootCa;
 
 
     public ProgressiveOutput(AtomCache cache, String rootId, File file) {
@@ -51,18 +52,16 @@ public class ProgressiveOutput implements OutputHandler {
     }
 
     @Override
-    public void handle(AFPChain afpChain) {
+    public void handle(AlignmentResult result) {
         try {
             if (progressive == null) {
                 this.progressive = new StructureImpl();
                 Structure root = cache.getStructure(rootId);
-                rootCa = StructureTools.getAtomCAArray(root);
                 Structure progressive = new StructureImpl();
                 progressive.addModel(root.getChains());
             }
-            System.out.print(Utility.summarizeAfpChain(afpChain));
-            Atom[] ca = StructureTools.getAtomCAArray(cache.getStructure(afpChain.getName2()));
-            Structure artificial = DisplayAFP.createArtificalStructure(afpChain, rootCa, ca);
+            System.out.print(Utility.summarizeAfpChain(result.getAfpChain()));
+            Structure artificial = DisplayAFP.createArtificalStructure(result.getAfpChain(), result.getCa1(), result.getCa2());
             progressive.addModel(artificial.getModel(1));
         } catch (IOException | StructureException e) {
             e.printStackTrace();

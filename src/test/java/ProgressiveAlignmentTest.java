@@ -4,6 +4,7 @@ import asarnow.jce.Utility;
 import asarnow.jce.io.OutputHandler;
 import asarnow.jce.io.ProgressiveOutput;
 import asarnow.jce.job.AlignmentJob;
+import asarnow.jce.job.AlignmentResult;
 import asarnow.jce.job.JobSeries;
 import asarnow.jce.job.ProgressiveAlignmentJobSeries;
 import org.biojava.nbio.structure.align.ce.CeMain;
@@ -39,7 +40,7 @@ public class ProgressiveAlignmentTest {
         List<String> list2align = Utility.listFromFile(listFile);
         list2align = Utility.standardizeIds(list2align);
         if (list2align.contains(root)) list2align.remove(root);
-        JobSeries<AFPChain> jobs = new ProgressiveAlignmentJobSeries(list2align, root, cache, CeMain.algorithmName, new CeParameters());
+        JobSeries<AlignmentResult> jobs = new ProgressiveAlignmentJobSeries(list2align, root, cache, CeMain.algorithmName, new CeParameters());
         OutputHandler output = new ProgressiveOutput(cache, root, outputFile);
         Align.align(jobs, Utility.createThreadPool(4), output);
     }

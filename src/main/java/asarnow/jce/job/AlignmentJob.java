@@ -17,7 +17,7 @@ import java.util.concurrent.Callable;
  * Date: 7/8/11
  * Time: 10:42 PM
  */
-public class AlignmentJob implements Callable<AFPChain> {
+public class AlignmentJob implements Callable<AlignmentResult> {
 
     private AtomCache cache;
     private String id1;
@@ -34,7 +34,7 @@ public class AlignmentJob implements Callable<AFPChain> {
     }
 
     @Override
-    public AFPChain call() throws IOException, StructureException {
+    public AlignmentResult call() throws IOException, StructureException {
 
         Structure structure1 = cache.getStructure( id1 );
         Structure structure2 = cache.getStructure( id2 );
@@ -59,6 +59,7 @@ public class AlignmentJob implements Callable<AFPChain> {
         AFPChain result = aligner.align(target1.getValue(), target2.getValue());
         result.setName1(target1.getKey());
         result.setName1(target2.getKey());
-        return result;
+
+        return new AlignmentResult(result, target1.getValue(), target2.getValue());
     }
 }

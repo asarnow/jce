@@ -1,7 +1,7 @@
 package asarnow.jce.io;
 
 import asarnow.jce.Utility;
-import org.biojava.nbio.structure.align.model.AFPChain;
+import asarnow.jce.job.AlignmentResult;
 
 import java.io.*;
 
@@ -36,9 +36,9 @@ public class SummaryOutput implements OutputHandler {
     }
 
     @Override
-    public void handle(AFPChain afpChain) {
+    public void handle(AlignmentResult result) {
         try {
-            output.write(Utility.summarizeAfpChain(afpChain));
+            output.write(Utility.summarizeAfpChain(result.getAfpChain()));
         } catch (IOException e) {
             e.printStackTrace();
         }

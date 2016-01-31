@@ -8,6 +8,7 @@ package asarnow.jce; /**
 import asarnow.jce.io.OutputHandler;
 import asarnow.jce.io.ProgressiveOutput;
 import asarnow.jce.io.SummaryOutput;
+import asarnow.jce.job.AlignmentResult;
 import asarnow.jce.job.JobSeries;
 import asarnow.jce.job.PairwiseAlignmentJobSeries;
 import asarnow.jce.job.ProgressiveAlignmentJobSeries;
@@ -20,7 +21,6 @@ import org.biojava.nbio.structure.align.ce.ConfigStrucAligParams;
 import org.biojava.nbio.structure.align.fatcat.FatCatFlexible;
 import org.biojava.nbio.structure.align.fatcat.FatCatRigid;
 import org.biojava.nbio.structure.align.fatcat.calc.FatCatParameters;
-import org.biojava.nbio.structure.align.model.AFPChain;
 import org.biojava.nbio.structure.align.util.AtomCache;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
@@ -152,7 +152,7 @@ public class Main {
             cache = Utility.initAtomCache(Constants.CWD);
         }
 
-        JobSeries<AFPChain> jobs;
+        JobSeries<AlignmentResult> jobs;
         OutputHandler output;
 
         if ( algorithmName != null ) {

@@ -1,7 +1,6 @@
 package asarnow.jce.job;
 
 import org.biojava.nbio.structure.align.ce.ConfigStrucAligParams;
-import org.biojava.nbio.structure.align.model.AFPChain;
 import org.biojava.nbio.structure.align.util.AtomCache;
 
 import java.util.List;
@@ -9,7 +8,7 @@ import java.util.List;
 /**
  * @author Daniel Asarnow
  */
-public class PairwiseAlignmentJobSeries implements JobSeries<AFPChain> {
+public class PairwiseAlignmentJobSeries implements JobSeries<AlignmentResult> {
 
     private final List<String> ids;
     private final AtomCache cache;

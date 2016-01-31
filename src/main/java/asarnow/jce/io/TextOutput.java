@@ -1,9 +1,6 @@
 package asarnow.jce.io;
 
-import org.biojava.nbio.structure.Atom;
-import org.biojava.nbio.structure.StructureException;
-import org.biojava.nbio.structure.StructureTools;
-import org.biojava.nbio.structure.align.model.AFPChain;
+import asarnow.jce.job.AlignmentResult;
 import org.biojava.nbio.structure.align.model.AfpChainWriter;
 import org.biojava.nbio.structure.align.util.AtomCache;
 
@@ -40,17 +37,9 @@ public class TextOutput implements OutputHandler {
     }
 
     @Override
-    public void handle(AFPChain afpChain) {
+    public void handle(AlignmentResult result) {
         try {
-            Atom[] ca1 = new Atom[0];
-            Atom[] ca2 = new Atom[0];
-            try {
-                ca1 = StructureTools.getAtomCAArray(cache.getStructure(afpChain.getName1()));
-                ca2 = StructureTools.getAtomCAArray(cache.getStructure(afpChain.getName2()));
-            } catch (StructureException e) {
-                e.printStackTrace();
-            }
-            output.write(AfpChainWriter.toFatCat(afpChain, ca1, ca2));
+            output.write(AfpChainWriter.toFatCat(result.getAfpChain(), result.getCa1(), result.getCa2()));
         } catch (IOException e) {
             e.printStackTrace();
         }
