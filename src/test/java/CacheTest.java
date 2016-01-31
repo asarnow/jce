@@ -3,7 +3,6 @@ import org.biojava.nbio.structure.Structure;
 import org.biojava.nbio.structure.StructureException;
 import org.biojava.nbio.structure.align.util.AtomCache;
 import org.junit.Test;
-import org.junit.runners.JUnit4;
 
 import java.io.File;
 import java.io.IOException;
