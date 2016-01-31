@@ -1,6 +1,5 @@
 package asarnow.jce;
 
-import com.sun.deploy.util.OrderedHashSet;
 import org.biojava.nbio.structure.Structure;
 import org.biojava.nbio.structure.align.model.AFPChain;
 import org.biojava.nbio.structure.align.util.AtomCache;
