@@ -37,7 +37,7 @@ public class ProgressiveAlignmentTest {
         String root = "1a0aA";
         root = Utility.standardizeId(root);
         List<String> list2align = Utility.listFromFile(listFile);
-        Utility.standardizeIds(list2align);
+        list2align = Utility.standardizeIds(list2align);
         if (list2align.contains(root)) list2align.remove(root);
         JobSeries<AFPChain> jobs = new ProgressiveAlignmentJobSeries(list2align, root, cache, CeMain.algorithmName, new CeParameters());
         OutputHandler output = new ProgressiveOutput(cache, root, outputFile);

@@ -158,7 +158,7 @@ public class Main {
         if ( algorithmName != null ) {
             if ( opts.has(listArg) && nonOptArgs.size() == 0 ) { // Just a list.
                 List<String> list2align = Utility.listFromFile(opts.valueOf(listArg));
-                Utility.standardizeIds(list2align);
+                list2align = Utility.standardizeIds(list2align);
                 if (opts.has(multipleArg)) {
                     String root = Utility.standardizeId(opts.valueOf(progressiveArg));
                     if (list2align.contains(root)) list2align.remove(root);

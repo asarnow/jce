@@ -1,5 +1,6 @@
 package asarnow.jce;
 
+import com.sun.deploy.util.OrderedHashSet;
 import org.biojava.nbio.structure.Structure;
 import org.biojava.nbio.structure.align.model.AFPChain;
 import org.biojava.nbio.structure.align.util.AtomCache;
@@ -7,7 +8,9 @@ import org.biojava.nbio.structure.io.FileParsingParameters;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -159,11 +162,12 @@ public class Utility {
             new ThreadPoolExecutor.CallerRunsPolicy() ); // If we have to reject a task, run it in the calling thread.
     }
 
-    public static void standardizeIds(List<String> ids) {
-        for (int i=0; i < ids.size(); i++) {
-            String id = ids.get(i);
-            ids.set(i, standardizeId(id));
+    public static List<String> standardizeIds(List<String> ids) {
+        Set<String> uniqueIds = new LinkedHashSet<>();
+        for (String id : ids) {
+            uniqueIds.add(standardizeId(id));
         }
+        return new ArrayList<>(uniqueIds);
     }
 
     public static String standardizeId(String id) {
