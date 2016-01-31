@@ -36,7 +36,7 @@ public class Utility {
             br = new BufferedReader(new FileReader(listFilePath));
             String line;
             while ( ( line = br.readLine() ) != null ) {
-                if ( !line.startsWith("#") || line.trim().length() == 0 ){
+                if ( !line.startsWith("#") && line.trim().length() > 0 ){
                     list.add(line);
                 }
             }
