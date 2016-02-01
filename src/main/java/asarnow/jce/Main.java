@@ -15,6 +15,8 @@ import asarnow.jce.job.ProgressiveAlignmentJobSeries;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
+import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.biojava.nbio.structure.align.ce.CeMain;
 import org.biojava.nbio.structure.align.ce.CeParameters;
@@ -80,6 +82,8 @@ public class Main {
                                             ofType(String.class);
         OptionSpec compressArg = parser.acceptsAll(Arrays.asList("compress","z"), "Compress generated structure files");
 
+        OptionSpec skipPreprocessArg = parser.acceptsAll(Arrays.asList("skip-pre"), "Skip ID pre-processing");
+
         OptionSpec<String> chainArg = parser.acceptsAll(Arrays.asList("chain"), "Use first chain from ambiguous IDs").
                 withRequiredArg().ofType(String.class).defaultsTo("first");
 
@@ -89,6 +93,8 @@ public class Main {
                                             ofType(Integer.class).
                                             defaultsTo(Constants.NPROC_DEFAULT);
         // Output
+        OptionSpec<String> logLevelArg = parser.acceptsAll(Arrays.asList("level"), "Log4J log level").
+                withRequiredArg().ofType(String.class).defaultsTo("INFO");
         OptionSpec<Integer> infoArg = parser.acceptsAll(Arrays.asList("info","i"),"Print structure information with indicated verbosity").
                 withOptionalArg().ofType(Integer.class).defaultsTo(0);
         OptionSpec<String> outfileArg = parser.acceptsAll(Arrays.asList("outfile","o"), "Output file").
@@ -107,6 +113,8 @@ public class Main {
             parser.printHelpOn( System.out );
             System.exit(0);
         }
+
+        LogManager.getRootLogger().setLevel(Level.toLevel(opts.valueOf(logLevelArg)));
 
         List<String> nonOptArgs = new LinkedList<>(opts.valuesOf(nonOpts));
         List<String> fileArgs = new ArrayList<>();
@@ -176,6 +184,8 @@ public class Main {
             } else {
                 inputList = nonOptArgs;
             }
+            logger.debug(inputList.size() + " items in input");
+
             list2align = Utility.standardizeIds(inputList);
 
             if (opts.has(infoArg)) { // Output info for structures
@@ -188,19 +198,29 @@ public class Main {
             if (opts.has(progressiveArg)) {
                 root = Utility.standardizeId(opts.valueOf(progressiveArg));
                 root = Utility.firstChainOnly(Arrays.asList(root), configuration.getPdbFilePath(), obsoleteBehavior).get(0);
+                logger.debug("Root structure " + opts.valueOf(progressiveArg) + " parsed as " + root);
             }
-            if (opts.valueOf(chainArg).toLowerCase().startsWith("f") || opts.valueOf(chainArg).equals("1")) {
-                list2align = Utility.firstChainOnlyAsync(list2align, configuration.getPdbFilePath(), obsoleteBehavior, pool);
-            } else {
-                list2align = Utility.expandStructuresAsync(list2align, configuration.getPdbFilePath(), obsoleteBehavior, pool);
+
+            if (!opts.has(skipPreprocessArg)) {
+                if (opts.valueOf(chainArg).toLowerCase().startsWith("f") || opts.valueOf(chainArg).equals("1")) {
+                    logger.debug("Parsing first chain in input structures");
+                    list2align = Utility.firstChainOnlyAsync(list2align, configuration.getPdbFilePath(), obsoleteBehavior, pool);
+                } else {
+                    logger.debug("Parsing all chains in input structures");
+                    list2align = Utility.expandStructuresAsync(list2align, configuration.getPdbFilePath(), obsoleteBehavior, pool);
+                }
             }
 
             if ( opts.has(extractArg) ) {
                 extractDir = Utility.createExtractDir( extractDir );
+                logger.debug("Extracting requested structures to " + extractDir);
                 List<String> list2extract = new ArrayList<>(list2align);
                 if (root != null) list2extract.add(root);
                 Utility.extractStructures(list2extract, cache, extractDir, opts.has(compressArg));
+                logger.debug("Done extracting");
             }
+
+            Utility.listToFile("list.log", list2align);
 
             if (algorithmName != null) {
                 JobSeries<AlignmentResult> jobs;
@@ -212,10 +232,13 @@ public class Main {
                     jobs = new PairwiseAlignmentJobSeries(list2align, cache, algorithmName, params);
                 }
                 if (opts.has(multipleArg)) {
+                    logger.debug("Rooted alignment output file " + opts.valueOf(outfileArg));
                     output = new ProgressiveOutput(cache, root, opts.valueOf(outfileArg));
                 } else {
+                    logger.debug("Alignment summary output file " + opts.valueOf(outfileArg));
                     output = new SummaryOutput(opts.valueOf(outfileArg));
                 }
+                logger.debug("Running " + jobs.total() + " alignments with " + algorithmName);
                 System.exit( Align.align(jobs, pool, output) );
             }
 

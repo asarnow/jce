@@ -3,6 +3,7 @@ package asarnow.jce;
 import asarnow.jce.io.OutputHandler;
 import asarnow.jce.job.AlignmentResult;
 import asarnow.jce.job.JobSeries;
+import org.apache.log4j.Logger;
 import org.biojava.nbio.structure.*;
 import org.biojava.nbio.structure.align.StructureAlignment;
 import org.biojava.nbio.structure.align.StructureAlignmentFactory;
@@ -22,6 +23,7 @@ import java.util.concurrent.*;
  * @author Daniel Asarnow
  */
 public class Align {
+    private static Logger logger = Logger.getLogger(Align.class);
 
 //    static final AFPChain POISON_PILL = new AFPChain() {{ setId(-1); }};
 
@@ -100,10 +102,12 @@ public class Align {
     public static int align(JobSeries<AlignmentResult> jobs, Executor pool, OutputHandler output) {
         CompletionService<AlignmentResult> alignmentService = new ExecutorCompletionService<>(pool);
         int queued = 0;
+        logger.debug("Queuing alignment jobs");
         while (jobs.hasNext()) {
             alignmentService.submit(jobs.next());
             queued++;
         }
+        logger.debug("Queued " + queued + " jobs");
         int received = 0;
         while (received < queued) {
                 try {
@@ -111,11 +115,12 @@ public class Align {
                     AlignmentResult result = futureAlignment.get();
                     output.handle(result);
                 } catch (InterruptedException | ExecutionException e) {
-                    e.printStackTrace();
+                    logger.error(e);
                 } finally {
                     received++;
                 }
             }
+        logger.debug("Received " + received + " job results");
         output.close();
         return 0;
     }

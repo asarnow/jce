@@ -140,11 +140,11 @@ public class Utility {
     }
 
     public static void writePDB(Structure structure, String extractDir, boolean compressed) throws IOException {
-        String name = structure.getName() + ".ent";
+        String name = compressed ? structure.getName() + ".ent.gz" : structure.getName() + ".ent";
         String path = extractDir + File.separator + name;
-
+        logger.debug("Writing " + structure.getName() + " to " + path);
         if (compressed) {
-            ZipOutputStream zipOutputStream = new ZipOutputStream(new FileOutputStream(path + ".gz"));
+            ZipOutputStream zipOutputStream = new ZipOutputStream(new FileOutputStream(path));
             zipOutputStream.putNextEntry(new ZipEntry(name));
             zipOutputStream.write(structure.toPDB().getBytes());
             zipOutputStream.closeEntry();
@@ -152,6 +152,7 @@ public class Utility {
         } else {
             FileOutputStream fileOutputStream = new FileOutputStream(path);
             fileOutputStream.write(structure.toPDB().getBytes());
+            fileOutputStream.close();
         }
 
     }
@@ -388,6 +389,7 @@ public class Utility {
         for (String item : list) {
             try {
                 Structure structure = cache.getStructure(item);
+                if (structure.getName() == null || structure.getName().equals("")) structure.setName(item);
                 writePDB(structure, extractDir, compressed);
                 newlist.add(structure.getName());
             } catch (IOException | StructureException | NullPointerException e) {
@@ -405,6 +407,7 @@ public class Utility {
         AtomCache cache = initAtomCache(pdbDir,parameters);
         try {
             Structure structure = cache.getStructure(structureSpec);
+            if (structure.getName() == null || structure.getName().equals("")) structure.setName(structureSpec);
             writePDB(structure, extractDir, compressed);
             return structure.getName();
         } catch (IOException | StructureException e) {
@@ -417,6 +420,10 @@ public class Utility {
         Path extractPath;
         if (pathname!=null) {
             extractPath = Paths.get(pathname);
+            if (!extractPath.toFile().exists()) {
+                logger.debug("mkdir :" + extractPath.toString());
+                extractPath.toFile().mkdirs();
+            }
         } else {
             extractPath = Files.createTempDirectory(Constants.TEMP_DIR_PREFIX);
         }
