@@ -46,7 +46,7 @@ public class Main {
         // Aligner selection
         OptionSpec fatcatArg = parser.acceptsAll(Arrays.asList("FATCAT-FLEX","fatcat-flex","fcf"), "Align with FATCAT_FLEX - flexible");
         OptionSpec fatcatRigidArg = parser.acceptsAll(Arrays.asList("FATCAT","fatcat","fc","fcr"), "Align with FATCAT - rigid");
-        OptionSpec ceArg = parser.acceptsAll(Arrays.asList("CE","ce"), "Align with CE (default)");
+        OptionSpec ceArg = parser.acceptsAll(Arrays.asList("CE","ce"), "Align with CE");
         OptionSpec daliArg = parser.acceptsAll(Arrays.asList("Dali","dali"),"Align using DaliLite external binary");
         // Aligner specific options
         // CE
