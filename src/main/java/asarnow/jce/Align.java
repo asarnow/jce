@@ -19,6 +19,7 @@ import org.biojava.nbio.structure.io.FileParsingParameters;
 import org.biojava.nbio.structure.io.PDBFileReader;
 
 import java.util.concurrent.*;
+import java.util.function.BiConsumer;
 
 /**
  * @author Daniel Asarnow
@@ -100,32 +101,39 @@ public class Align {
         return 0;
     }
 
-    public static <T> int align(JobSeries<T> jobs, Executor pool, OutputHandler<T> output) {
-        BlockingQueue<Future<T>> outputQueue = new ArrayBlockingQueue<>(128);
+    public static <T> int align(JobSeries<T> jobs, Executor pool, OutputHandler<T> outputHandler) {
+        BlockingQueue<Future<T>> outputQueue = new LinkedBlockingQueue<>(Integer.MAX_VALUE);
         CompletionService<T> alignmentService = new JobCompletionService<>(pool, outputQueue);
         int queued = 0;
+        Thread outputThread = new Thread(()->output(alignmentService, outputHandler, jobs.total()));
+        outputThread.start();
         logger.debug("Queuing alignment jobs");
         while (jobs.hasNext()) {
             alignmentService.submit(jobs.next());
             queued++;
         }
-        logger.debug("Queued " + queued + " jobs");
+        logger.debug("Finished queuing " + queued + " jobs");
+        try {
+            outputThread.join();
+        } catch (InterruptedException e) {
+            logger.error(e);
+        }
+        return 0;
+    }
+
+    public static <T> void output(CompletionService<T> alignmentService, OutputHandler<T> outputHandler, int queued) {
         int received = 0;
-        while (received < queued) {
-            logger.debug(outputQueue.size() + " items in completion queue");
+        while (received++ < queued) {
             try {
                 Future<T> futureAlignment = alignmentService.take();
                 T result = futureAlignment.get();
-                output.handle(result);
+                outputHandler.handle(result);
             } catch (InterruptedException | ExecutionException e) {
                 logger.error(e);
-            } finally {
-                received++;
             }
         }
         logger.debug("Received " + received + " job results");
-        output.close();
-        return 0;
+        outputHandler.close();
     }
 
 //    static int alignList(List<String> ids, String pdbDir, String outFile, Boolean divided, Integer nproc, int alignerFlag) /*throws IOException, InterruptedException*/ {

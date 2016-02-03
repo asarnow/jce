@@ -52,18 +52,11 @@ public class ProgressiveOutput implements OutputHandler<Structure> {
 
     @Override
     public void handle(Structure result) {
-//        try {
-//            System.out.print(Utility.summarizeAfpChain(result.getAfpChain()));
-//            if (progressive == null) {
-//                progressive = DisplayAFP.createArtificalStructure(result.getAfpChain(), result.getCa1(), result.getCa2());
-//            } else {
-//                Structure artificial = DisplayAFP.createArtificalStructure(result.getAfpChain(), result.getCa1(), result.getCa2());
-//                progressive.addModel(artificial.getModel(1));
-//            }
+        if (progressive == null) {
+            progressive = result;
+        } else {
             progressive.addModel(result.getModel(1));
-//        } catch (   StructureException e) {
-//            e.printStackTrace();
-//        }
+        }
     }
 
 }
