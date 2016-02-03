@@ -1,5 +1,6 @@
 package asarnow.jce.job;
 
+import asarnow.jce.Utility;
 import org.biojava.nbio.structure.align.ce.ConfigStrucAligParams;
 import org.biojava.nbio.structure.align.util.AtomCache;
 
@@ -8,7 +9,7 @@ import java.util.List;
 /**
  * @author Daniel Asarnow
  */
-public class PairwiseAlignmentJobSeries implements JobSeries<AlignmentResult> {
+public class PairwiseAlignmentJobSeries implements JobSeries<String> {
 
     private final List<String> ids;
     private final AtomCache cache;
@@ -34,10 +35,10 @@ public class PairwiseAlignmentJobSeries implements JobSeries<AlignmentResult> {
     }
 
     @Override
-    public AlignmentJob next() {
+    public AlignmentJob<String> next() {
         if (j==ids.size()) j = (++i)+1;
         cnt++;
-        return new AlignmentJob(cache, ids.get(i), ids.get(j++), algorithmName, params);
+        return new AlignmentJob<>(cache, ids.get(i), ids.get(j++), algorithmName, params, x-> Utility.summarizeAfpChain(x.getAfpChain()));
     }
 
     @Override

@@ -1,10 +1,13 @@
 package asarnow.jce;
 
+import asarnow.jce.job.AlignmentResult;
 import org.apache.log4j.Logger;
 import org.biojava.nbio.structure.Chain;
 import org.biojava.nbio.structure.Structure;
 import org.biojava.nbio.structure.StructureException;
+import org.biojava.nbio.structure.align.gui.DisplayAFP;
 import org.biojava.nbio.structure.align.model.AFPChain;
+import org.biojava.nbio.structure.align.model.AfpChainWriter;
 import org.biojava.nbio.structure.align.util.AtomCache;
 import org.biojava.nbio.structure.io.FileParsingParameters;
 import org.biojava.nbio.structure.io.LocalPDBDirectory;
@@ -428,5 +431,19 @@ public class Utility {
             extractPath = Files.createTempDirectory(Constants.TEMP_DIR_PREFIX);
         }
         return extractPath.toString();
+    }
+
+    public static Structure createArtificialStructure(AlignmentResult result) {
+        Structure artificial = null;
+        try {
+            artificial = DisplayAFP.createArtificalStructure(result.getAfpChain(), result.getCa1(), result.getCa2());
+        } catch (StructureException e) {
+            logger.error(e);
+        }
+        return artificial;
+    }
+
+    public static String createAlignmentText(AlignmentResult result) {
+        return AfpChainWriter.toFatCat(result.getAfpChain(), result.getCa1(), result.getCa2());
     }
 }

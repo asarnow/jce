@@ -223,7 +223,7 @@ public class Main {
             Utility.listToFile("list.log", list2align);
 
             if (algorithmName != null) {
-                JobSeries<AlignmentResult> jobs;
+                JobSeries jobs;
                 OutputHandler output;
                 if (opts.has(progressiveArg)) {
                     list2align.remove(root);

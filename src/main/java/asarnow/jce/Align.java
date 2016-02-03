@@ -2,6 +2,7 @@ package asarnow.jce;
 
 import asarnow.jce.io.OutputHandler;
 import asarnow.jce.job.AlignmentResult;
+import asarnow.jce.job.JobCompletionService;
 import asarnow.jce.job.JobSeries;
 import org.apache.log4j.Logger;
 import org.biojava.nbio.structure.*;
@@ -99,8 +100,9 @@ public class Align {
         return 0;
     }
 
-    public static int align(JobSeries<AlignmentResult> jobs, Executor pool, OutputHandler output) {
-        CompletionService<AlignmentResult> alignmentService = new ExecutorCompletionService<>(pool);
+    public static <T> int align(JobSeries<T> jobs, Executor pool, OutputHandler<T> output) {
+        BlockingQueue<Future<T>> outputQueue = new ArrayBlockingQueue<>(128);
+        CompletionService<T> alignmentService = new JobCompletionService<>(pool, outputQueue);
         int queued = 0;
         logger.debug("Queuing alignment jobs");
         while (jobs.hasNext()) {
@@ -110,16 +112,17 @@ public class Align {
         logger.debug("Queued " + queued + " jobs");
         int received = 0;
         while (received < queued) {
-                try {
-                    Future<AlignmentResult> futureAlignment = alignmentService.take();
-                    AlignmentResult result = futureAlignment.get();
-                    output.handle(result);
-                } catch (InterruptedException | ExecutionException e) {
-                    logger.error(e);
-                } finally {
-                    received++;
-                }
+            logger.debug(outputQueue.size() + " items in completion queue");
+            try {
+                Future<T> futureAlignment = alignmentService.take();
+                T result = futureAlignment.get();
+                output.handle(result);
+            } catch (InterruptedException | ExecutionException e) {
+                logger.error(e);
+            } finally {
+                received++;
             }
+        }
         logger.debug("Received " + received + " job results");
         output.close();
         return 0;

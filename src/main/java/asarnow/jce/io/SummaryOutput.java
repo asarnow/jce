@@ -15,7 +15,7 @@ import java.io.PrintStream;
  * Date: 7/9/11
  * Time: 12:27 PM
  */
-public class SummaryOutput implements OutputHandler {
+public class SummaryOutput implements OutputHandler<String> {
     private static Logger logger = Logger.getLogger(SummaryOutput.class);
 
     File file;
@@ -47,9 +47,10 @@ public class SummaryOutput implements OutputHandler {
     }
 
     @Override
-    public void handle(AlignmentResult result) {
-        logger.debug("Got result for chains " + result.getAfpChain().getName1() + ", " + result.getAfpChain().getName2());
-        output.print(Utility.summarizeAfpChain(result.getAfpChain()));
+    public void handle(String result) {
+//        logger.debug("Got result for chains " + result.getAfpChain().getName1() + ", " + result.getAfpChain().getName2());
+//        output.print(Utility.summarizeAfpChain(result.getAfpChain()));
+        output.print(result);
         counter++;
         if (counter % 10 == 0) {
             output.flush();

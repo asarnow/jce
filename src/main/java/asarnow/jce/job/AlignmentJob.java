@@ -1,5 +1,6 @@
 package asarnow.jce.job;
 
+import asarnow.jce.Utility;
 import org.biojava.nbio.structure.*;
 import org.biojava.nbio.structure.align.StructureAlignment;
 import org.biojava.nbio.structure.align.StructureAlignmentFactory;
@@ -10,6 +11,7 @@ import org.biojava.nbio.structure.align.util.AtomCache;
 import java.io.IOException;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.concurrent.Callable;
+import java.util.function.Function;
 
 /**
  * Created by IntelliJ IDEA.
@@ -17,24 +19,26 @@ import java.util.concurrent.Callable;
  * Date: 7/8/11
  * Time: 10:42 PM
  */
-public class AlignmentJob implements Callable<AlignmentResult> {
+public class AlignmentJob<T> implements Callable<T> {
 
     private AtomCache cache;
     private String id1;
     private String id2;
     private String algorithmName;
     private ConfigStrucAligParams params;
+    private Function<AlignmentResult,T> handler;
 
-    public AlignmentJob(AtomCache cache, String id1, String id2, String algorithmName, ConfigStrucAligParams params) {
+    public AlignmentJob(AtomCache cache, String id1, String id2, String algorithmName, ConfigStrucAligParams params, Function<AlignmentResult,T> handler) {
         this.cache = cache;
         this.id1 = id1;
         this.id2 = id2;
         this.algorithmName = algorithmName;
         this.params = params;
+        this.handler = handler;
     }
 
     @Override
-    public AlignmentResult call() throws IOException, StructureException {
+    public T call() throws IOException, StructureException {
 
         Structure structure1 = cache.getStructure( id1 );
         Structure structure2 = cache.getStructure( id2 );
@@ -60,6 +64,7 @@ public class AlignmentJob implements Callable<AlignmentResult> {
         result.setName1(target1.getKey());
         result.setName2(target2.getKey());
 
-        return new AlignmentResult(result, target1.getValue(), target2.getValue());
+//        return new AlignmentResult(result, target1.getValue(), target2.getValue());
+        return handler.apply(new AlignmentResult(result, target1.getValue(), target2.getValue()));
     }
 }

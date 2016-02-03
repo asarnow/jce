@@ -28,8 +28,9 @@ public class AlignmentTest {
         AtomCache cache = Utility.initAtomCache(pdbDir);
         String id1 = "1a0a.A";
         String id2 = "1a0r.B";
-        AlignmentJob alignJob = new AlignmentJob(cache, id1, id2, CeMain.algorithmName, new CeParameters());
-        OutputHandler output = new TextOutput(cache, outputFile);
+        AlignmentJob<String> alignJob = new AlignmentJob<>(cache, id1, id2,
+                CeMain.algorithmName, new CeParameters(), Utility::createAlignmentText);
+        OutputHandler<String> output = new TextOutput(cache, outputFile);
         try {
             output.handle(alignJob.call());
         } catch (IOException | StructureException e) {

@@ -1,5 +1,7 @@
 package asarnow.jce.job;
 
+import asarnow.jce.Utility;
+import org.biojava.nbio.structure.Structure;
 import org.biojava.nbio.structure.align.ce.ConfigStrucAligParams;
 import org.biojava.nbio.structure.align.util.AtomCache;
 
@@ -8,7 +10,7 @@ import java.util.List;
 /**
  * (C) 1/28/16 Daniel Asarnow
  */
-public class ProgressiveAlignmentJobSeries implements JobSeries<AlignmentResult> {
+public class ProgressiveAlignmentJobSeries implements JobSeries<Structure> {
     private final List<String> ids;
     private final String root;
     private final AtomCache cache;
@@ -32,8 +34,8 @@ public class ProgressiveAlignmentJobSeries implements JobSeries<AlignmentResult>
     }
 
     @Override
-    public AlignmentJob next() {
-        return new AlignmentJob(cache, root, ids.get(i++), algorithmName, params);
+    public AlignmentJob<Structure> next() {
+        return new AlignmentJob<>(cache, root, ids.get(i++), algorithmName, params, Utility::createArtificialStructure);
     }
 
     @Override

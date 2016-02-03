@@ -12,7 +12,7 @@ import java.io.*;
 /**
  * @author Daniel Asarnow
  */
-public class ProgressiveOutput implements OutputHandler {
+public class ProgressiveOutput implements OutputHandler<Structure> {
 
     File file;
     AtomCache cache;
@@ -51,18 +51,19 @@ public class ProgressiveOutput implements OutputHandler {
     }
 
     @Override
-    public void handle(AlignmentResult result) {
-        try {
-            System.out.print(Utility.summarizeAfpChain(result.getAfpChain()));
-            if (progressive == null) {
-                progressive = DisplayAFP.createArtificalStructure(result.getAfpChain(), result.getCa1(), result.getCa2());
-            } else {
-                Structure artificial = DisplayAFP.createArtificalStructure(result.getAfpChain(), result.getCa1(), result.getCa2());
-                progressive.addModel(artificial.getModel(1));
-            }
-        } catch (   StructureException e) {
-            e.printStackTrace();
-        }
+    public void handle(Structure result) {
+//        try {
+//            System.out.print(Utility.summarizeAfpChain(result.getAfpChain()));
+//            if (progressive == null) {
+//                progressive = DisplayAFP.createArtificalStructure(result.getAfpChain(), result.getCa1(), result.getCa2());
+//            } else {
+//                Structure artificial = DisplayAFP.createArtificalStructure(result.getAfpChain(), result.getCa1(), result.getCa2());
+//                progressive.addModel(artificial.getModel(1));
+//            }
+            progressive.addModel(result.getModel(1));
+//        } catch (   StructureException e) {
+//            e.printStackTrace();
+//        }
     }
 
 }

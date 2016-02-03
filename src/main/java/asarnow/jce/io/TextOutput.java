@@ -9,7 +9,7 @@ import java.io.*;
 /**
  * (C) 1/30/16 Daniel Asarnow
  */
-public class TextOutput implements OutputHandler {
+public class TextOutput implements OutputHandler<String> {
 
 
     File file;
@@ -37,9 +37,9 @@ public class TextOutput implements OutputHandler {
     }
 
     @Override
-    public void handle(AlignmentResult result) {
+    public void handle(String result) {
         try {
-            output.write(AfpChainWriter.toFatCat(result.getAfpChain(), result.getCa1(), result.getCa2()));
+            output.write(result);
         } catch (IOException e) {
             e.printStackTrace();
         }
