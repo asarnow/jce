@@ -1,6 +1,5 @@
 package asarnow.jce.job;
 
-import asarnow.jce.Utility;
 import org.biojava.nbio.structure.*;
 import org.biojava.nbio.structure.align.StructureAlignment;
 import org.biojava.nbio.structure.align.StructureAlignmentFactory;

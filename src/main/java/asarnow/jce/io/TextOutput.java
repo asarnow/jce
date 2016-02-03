@@ -1,7 +1,5 @@
 package asarnow.jce.io;
 
-import asarnow.jce.job.AlignmentResult;
-import org.biojava.nbio.structure.align.model.AfpChainWriter;
 import org.biojava.nbio.structure.align.util.AtomCache;
 
 import java.io.*;

@@ -2,14 +2,11 @@ import asarnow.jce.Align;
 import asarnow.jce.Utility;
 import asarnow.jce.io.OutputHandler;
 import asarnow.jce.io.ProgressiveOutput;
-import asarnow.jce.job.AlignmentResult;
 import asarnow.jce.job.JobSeries;
 import asarnow.jce.job.ProgressiveAlignmentJobSeries;
-import org.biojava.nbio.structure.Structure;
 import org.biojava.nbio.structure.align.ce.CeMain;
 import org.biojava.nbio.structure.align.ce.CeParameters;
 import org.biojava.nbio.structure.align.util.AtomCache;
-import org.jmol.minimize.Util;
 import org.junit.Test;
 
 import java.io.File;

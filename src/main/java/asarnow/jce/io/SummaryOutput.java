@@ -1,7 +1,5 @@
 package asarnow.jce.io;
 
-import asarnow.jce.Utility;
-import asarnow.jce.job.AlignmentResult;
 import org.apache.log4j.Logger;
 
 import java.io.File;

@@ -1,10 +1,6 @@
 package asarnow.jce.io;
 
-import asarnow.jce.Utility;
-import asarnow.jce.job.AlignmentResult;
 import org.biojava.nbio.structure.Structure;
-import org.biojava.nbio.structure.StructureException;
-import org.biojava.nbio.structure.align.gui.DisplayAFP;
 import org.biojava.nbio.structure.align.util.AtomCache;
 
 import java.io.*;

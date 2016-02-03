@@ -1,7 +1,6 @@
 package asarnow.jce;
 
 import asarnow.jce.io.OutputHandler;
-import asarnow.jce.job.AlignmentResult;
 import asarnow.jce.job.JobCompletionService;
 import asarnow.jce.job.JobSeries;
 import org.apache.log4j.Logger;
@@ -19,7 +18,6 @@ import org.biojava.nbio.structure.io.FileParsingParameters;
 import org.biojava.nbio.structure.io.PDBFileReader;
 
 import java.util.concurrent.*;
-import java.util.function.BiConsumer;
 
 /**
  * @author Daniel Asarnow

@@ -8,7 +8,6 @@ package asarnow.jce; /**
 import asarnow.jce.io.OutputHandler;
 import asarnow.jce.io.ProgressiveOutput;
 import asarnow.jce.io.SummaryOutput;
-import asarnow.jce.job.AlignmentResult;
 import asarnow.jce.job.JobSeries;
 import asarnow.jce.job.PairwiseAlignmentJobSeries;
 import asarnow.jce.job.ProgressiveAlignmentJobSeries;
